@@ -33,3 +33,107 @@ java.lang.NullPointerException
 
 !ENTRY org.eclipse.epp.logging.aeri.ui 2 6 2016-09-01 12:05:48.881
 !MESSAGE Failed to determine ETAG for remote problems database. Stopping update. Version: 1.0.0.v20150617-0732
+
+!ENTRY org.eclipse.equinox.p2.operations 4 10053 2016-09-01 12:25:57.202
+!MESSAGE Operation details
+!SUBENTRY 1 org.eclipse.equinox.p2.director 4 10053 2016-09-01 12:25:57.202
+!MESSAGE Cannot complete the install because one or more required items could not be found.
+!SUBENTRY 2 org.eclipse.equinox.p2.director 4 0 2016-09-01 12:25:57.202
+!MESSAGE Software being installed: Git Team Provider - auto-import for Eclipse >= 4.6 4.4.1.201607150455-r (org.eclipse.egit.ui.smartimport 4.4.1.201607150455-r)
+!SUBENTRY 2 org.eclipse.equinox.p2.director 4 0 2016-09-01 12:25:57.202
+!MESSAGE Missing requirement: Git Team Provider - auto-import for Eclipse >= 4.6 4.4.1.201607150455-r (org.eclipse.egit.ui.smartimport 4.4.1.201607150455-r) requires 'bundle org.eclipse.ui.ide 3.12.0' but it could not be found
+
+!ENTRY org.eclipse.equinox.p2.operations 4 10053 2016-09-01 12:25:57.208
+!MESSAGE Operation details
+!SUBENTRY 1 org.eclipse.equinox.p2.director 4 10053 2016-09-01 12:25:57.208
+!MESSAGE Cannot complete the install because one or more required items could not be found.
+!SUBENTRY 2 org.eclipse.equinox.p2.director 4 0 2016-09-01 12:25:57.208
+!MESSAGE Software being installed: Git Team Provider - auto-import for Eclipse >= 4.6 4.4.1.201607150455-r (org.eclipse.egit.ui.smartimport 4.4.1.201607150455-r)
+!SUBENTRY 2 org.eclipse.equinox.p2.director 4 0 2016-09-01 12:25:57.208
+!MESSAGE Missing requirement: Git Team Provider - auto-import for Eclipse >= 4.6 4.4.1.201607150455-r (org.eclipse.egit.ui.smartimport 4.4.1.201607150455-r) requires 'bundle org.eclipse.ui.ide 3.12.0' but it could not be found
+
+!ENTRY org.eclipse.equinox.p2.operations 4 10053 2016-09-01 12:25:57.228
+!MESSAGE Operation details
+!SUBENTRY 1 org.eclipse.equinox.p2.director 4 10053 2016-09-01 12:25:57.228
+!MESSAGE Cannot complete the install because one or more required items could not be found.
+!SUBENTRY 2 org.eclipse.equinox.p2.director 4 0 2016-09-01 12:25:57.228
+!MESSAGE Software being installed: Git Team Provider - auto-import for Eclipse >= 4.6 4.4.1.201607150455-r (org.eclipse.egit.ui.smartimport 4.4.1.201607150455-r)
+!SUBENTRY 2 org.eclipse.equinox.p2.director 4 0 2016-09-01 12:25:57.228
+!MESSAGE Missing requirement: Git Team Provider - auto-import for Eclipse >= 4.6 4.4.1.201607150455-r (org.eclipse.egit.ui.smartimport 4.4.1.201607150455-r) requires 'bundle org.eclipse.ui.ide 3.12.0' but it could not be found
+
+!ENTRY org.eclipse.equinox.p2.operations 4 10053 2016-09-01 12:25:57.228
+!MESSAGE Operation details
+!SUBENTRY 1 org.eclipse.equinox.p2.director 4 10053 2016-09-01 12:25:57.228
+!MESSAGE Cannot complete the install because one or more required items could not be found.
+!SUBENTRY 2 org.eclipse.equinox.p2.director 4 0 2016-09-01 12:25:57.228
+!MESSAGE Software being installed: Git Team Provider - auto-import for Eclipse >= 4.6 4.4.1.201607150455-r (org.eclipse.egit.ui.smartimport 4.4.1.201607150455-r)
+!SUBENTRY 2 org.eclipse.equinox.p2.director 4 0 2016-09-01 12:25:57.228
+!MESSAGE Missing requirement: Git Team Provider - auto-import for Eclipse >= 4.6 4.4.1.201607150455-r (org.eclipse.egit.ui.smartimport 4.4.1.201607150455-r) requires 'bundle org.eclipse.ui.ide 3.12.0' but it could not be found
+!SESSION 2016-09-01 12:30:25.257 -----------------------------------------------
+eclipse.buildId=4.5.0.I20150603-2000
+java.version=1.8.0_101
+java.vendor=Oracle Corporation
+BootLoader constants: OS=win32, ARCH=x86_64, WS=win32, NL=en_US
+Framework arguments:  -product org.eclipse.epp.package.java.product -product org.eclipse.epp.package.java.product -product org.eclipse.epp.package.java.product
+Command-line arguments:  -os win32 -ws win32 -arch x86_64 -product org.eclipse.epp.package.java.product -product org.eclipse.epp.package.java.product -data file:/C:/Users/MARTINUS/Documents/MDP/ -product org.eclipse.epp.package.java.product
+
+!ENTRY org.eclipse.recommenders.snipmatch.rcp 4 0 2016-09-01 12:30:27.241
+!MESSAGE FrameworkEvent ERROR
+!STACK 0
+org.osgi.framework.BundleException: Could not resolve module: org.eclipse.recommenders.snipmatch.rcp [372]
+  Bundle was not resolved because of a uses contraint violation.
+  org.osgi.service.resolver.ResolutionException: Uses constraint violation. Unable to resolve resource org.eclipse.recommenders.snipmatch.rcp [osgi.identity; osgi.identity="org.eclipse.recommenders.snipmatch.rcp"; type="osgi.bundle"; version:Version="2.2.0.v20150609-1848"; singleton:="true"] because it is exposed to package 'org.eclipse.jgit.transport' from resources org.eclipse.jgit [osgi.identity; osgi.identity="org.eclipse.jgit"; type="osgi.bundle"; version:Version="4.4.1.201607150455-r"] and org.eclipse.jgit [osgi.identity; osgi.identity="org.eclipse.jgit"; type="osgi.bundle"; version:Version="4.0.0.201506090130-r"] via two dependency chains.
+
+Chain 1:
+  org.eclipse.recommenders.snipmatch.rcp [osgi.identity; osgi.identity="org.eclipse.recommenders.snipmatch.rcp"; type="osgi.bundle"; version:Version="2.2.0.v20150609-1848"; singleton:="true"]
+    require: (osgi.wiring.bundle=org.eclipse.jgit)
+     |
+    provide: osgi.wiring.bundle: org.eclipse.jgit
+  org.eclipse.jgit [osgi.identity; osgi.identity="org.eclipse.jgit"; type="osgi.bundle"; version:Version="4.4.1.201607150455-r"]
+
+Chain 2:
+  org.eclipse.recommenders.snipmatch.rcp [osgi.identity; osgi.identity="org.eclipse.recommenders.snipmatch.rcp"; type="osgi.bundle"; version:Version="2.2.0.v20150609-1848"; singleton:="true"]
+    require: (&(osgi.wiring.bundle=org.eclipse.recommenders.snipmatch)(&(bundle-version>=2.2.0)(!(bundle-version>=2.2.1))))
+     |
+    provide: osgi.wiring.bundle; bundle-version:Version="2.2.0.v20150609-1848"; osgi.wiring.bundle="org.eclipse.recommenders.snipmatch"; singleton:="true"
+  org.eclipse.recommenders.snipmatch [osgi.identity; osgi.identity="org.eclipse.recommenders.snipmatch"; type="osgi.bundle"; version:Version="2.2.0.v20150609-1848"; singleton:="true"]
+    require: (osgi.wiring.bundle=org.eclipse.jgit)
+     |
+    provide: osgi.wiring.bundle: org.eclipse.jgit
+  org.eclipse.jgit [osgi.identity; osgi.identity="org.eclipse.jgit"; type="osgi.bundle"; version:Version="4.0.0.201506090130-r"]
+	at org.eclipse.osgi.container.Module.start(Module.java:434)
+	at org.eclipse.osgi.container.ModuleContainer$ContainerStartLevel.incStartLevel(ModuleContainer.java:1582)
+	at org.eclipse.osgi.container.ModuleContainer$ContainerStartLevel.incStartLevel(ModuleContainer.java:1561)
+	at org.eclipse.osgi.container.ModuleContainer$ContainerStartLevel.doContainerStartLevel(ModuleContainer.java:1533)
+	at org.eclipse.osgi.container.ModuleContainer$ContainerStartLevel.dispatchEvent(ModuleContainer.java:1476)
+	at org.eclipse.osgi.container.ModuleContainer$ContainerStartLevel.dispatchEvent(ModuleContainer.java:1)
+	at org.eclipse.osgi.framework.eventmgr.EventManager.dispatchEvent(EventManager.java:230)
+	at org.eclipse.osgi.framework.eventmgr.EventManager$EventThread.run(EventManager.java:340)
+
+!ENTRY org.eclipse.egit.ui 2 0 2016-09-01 12:30:36.991
+!MESSAGE Warning: The environment variable HOME is not set. The following directory will be used to store the Git
+user global configuration and to define the default location to store repositories: 'C:\Users\MARTINUS'. If this is
+not correct please set the HOME environment variable and restart Eclipse. Otherwise Git for Windows and
+EGit might behave differently since they see different configuration options.
+This warning can be switched off on the Team > Git > Confirmations and Warnings preference page.
+
+!ENTRY org.eclipse.epp.logging.aeri.ui 1 4 2016-09-01 12:30:48.820
+!MESSAGE The error reporting server is not available. Error reporting will be disabled until next restart. Version: 1.0.0.v20150617-0732
+!STACK 0
+org.eclipse.epp.internal.logging.aeri.ui.l10n.Logs$LogTraceException
+	at org.eclipse.epp.internal.logging.aeri.ui.l10n.Logs$LogTraceException.newTrace(Logs.java:382)
+	at org.eclipse.epp.internal.logging.aeri.ui.l10n.Logs.log(Logs.java:134)
+	at org.eclipse.epp.internal.logging.aeri.ui.l10n.Logs.log(Logs.java:126)
+	at org.eclipse.epp.internal.logging.aeri.ui.log.CheckServerAvailabilityJob.run(CheckServerAvailabilityJob.java:53)
+	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:55)
+
+!ENTRY org.eclipse.epp.logging.aeri.ui 2 18 2016-09-01 12:31:38.356
+!MESSAGE Updating the index from remote failed. Version: 1.0.0.v20150617-0732
+!STACK 0
+java.lang.NullPointerException
+	at org.eclipse.epp.internal.logging.aeri.ui.log.ProblemsDatabaseUpdateJob.getEtag(ProblemsDatabaseUpdateJob.java:95)
+	at org.eclipse.epp.internal.logging.aeri.ui.log.ProblemsDatabaseUpdateJob.run(ProblemsDatabaseUpdateJob.java:58)
+	at org.eclipse.core.internal.jobs.Worker.run(Worker.java:55)
+
+!ENTRY org.eclipse.epp.logging.aeri.ui 2 6 2016-09-01 12:31:38.357
+!MESSAGE Failed to determine ETAG for remote problems database. Stopping update. Version: 1.0.0.v20150617-0732
