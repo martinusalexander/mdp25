@@ -14,4 +14,11 @@
 	<natures>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>src/simulator/FigureMain.java</name>
+			<type>1</type>
+			<location>D:/study/1617Sem1/CZ3004 Multidisciplinary Design Project/MDP/mdp25/Algorithm/src/simulator/FigureMain.java</location>
+		</link>
+	</linkedResources>
 </projectDescription>
