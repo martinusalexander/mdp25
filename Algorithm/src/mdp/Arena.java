@@ -19,7 +19,18 @@ public class Arena {
 		} catch (IndexOutOfBoundsException e) {
 			return null;
 		}
-		
+	}
+	
+	public int getExploredGrid() {
+		int counter = 0;
+		for (int i = 0; i < ARENA_LENGTH; i++) {
+			for (int j = 0; j < ARENA_HEIGHT; j++) {
+				if (grid[i][j].isVisitedOnce() || grid[i][j].isVisitedTwice()) {
+					counter++;
+				}
+			}
+		}
+		return counter;
 	}
 	
 
