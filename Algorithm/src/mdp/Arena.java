@@ -33,5 +33,36 @@ public class Arena {
 		return counter;
 	}
 	
+	public boolean checkIfObstacle(int x, int y) {
+		Grid grid = getGrid(x, y);
+		if (grid.isObstacle()) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public boolean checkIfVisited(int x, int y) {
+		Grid grid = getGrid(x, y);
+		if (grid.isVisitedOnce() || grid.isVisitedTwice()) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public int checkNumberOfVisit(int x, int y) {
+		Grid grid = getGrid(x, y);
+		if (grid.isVisitedOnce()) {
+			return 1;
+		} else if (grid.isVisitedTwice()) {
+			return 2;
+		} else {
+			return 0;
+		}
+	}
+	
+	
+	
 
 }
