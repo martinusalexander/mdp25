@@ -1,0 +1,292 @@
+package mdp;
+
+import java.util.Scanner;
+
+public class Robot {
+	
+	//MODE
+	private static final int IDLE_MODE = 900;
+	private static final int EXPLORE_MODE = 901;
+	private static final int FASTEST_MODE = 902;
+	
+	//DIRECTION
+	private static final int HEADING_UP = 0;
+	private static final int HEADING_RIGHT = 90;
+	private static final int HEADING_DOWN = 180;
+	private static final int HEADING_LEFT = 270;
+	
+	//LIST OF ACTION
+	public static final int MOVE_FORWARD = 800;
+	public static final int MOVE_BACKWARD = 801;
+	public static final int TURN_LEFT = 802;
+	public static final int TURN_RIGHT = 803;
+	public static final int TURN_180 = 804;
+	public static final int CHECK_OBSTACLE_IN_FRONT = 805;
+	public static final int CHECK_OBSTACLE_ON_LEFT = 806;
+	public static final int CHECK_OBSTACLE_ON_RIGHT = 807;
+	public static final int EXPLORE = 808;
+	public static final int FASTEST_RUN = 809;
+	
+	//INITIAL POSITION AND DIRECTION
+	private static final int DESIRED_INITIAL_X_LOCATION = 0;
+	private static final int DESIRED_INITIAL_Y_LOCATION = 0;
+	private static final int DESIRED_INITIAL_DIRECTION = HEADING_DOWN;
+	
+	private int xLocation;
+	private int yLocation;
+	private int direction;
+	private boolean isCalibrated;
+	private int mode;
+	
+	public Robot() {
+		this.xLocation = 0;
+		this.yLocation = 0;
+		this.direction = HEADING_DOWN;
+		this.isCalibrated = false;
+		this.mode = IDLE_MODE;
+	}
+	
+	public Robot(int startingXLocation, int startingYLocation, int direction) {
+		this.xLocation = startingXLocation;
+		this.yLocation = startingYLocation;
+		this.direction = direction;
+		this.isCalibrated = false;
+		this.mode = IDLE_MODE;
+	}
+	
+	private void explore() {
+		this.mode = EXPLORE_MODE;
+		do {
+			calibrateInitialPosition();
+		} while (!isCalibrated);
+		//Code here
+		
+		
+		//Finished
+		this.mode = IDLE_MODE;
+		
+	}
+	
+	private void fastestRun() {
+		this.mode = FASTEST_MODE;
+		do {
+			calibrateInitialPosition();
+		} while (!isCalibrated);
+		//Code here
+		
+		//Finishing
+		this.mode = IDLE_MODE;
+	}
+	
+	private void calibrateInitialPosition() {
+		if (xLocation != DESIRED_INITIAL_X_LOCATION && yLocation != DESIRED_INITIAL_Y_LOCATION && direction != DESIRED_INITIAL_DIRECTION) {
+			System.out.println("Robot is put in the incorrect position or incorrect direction");
+			correctRobotPosition();
+			return;
+		} else {
+			//TODO (command Arduino)
+			isCalibrated = true;
+		}
+	}
+	
+	private void correctRobotPosition() {
+		Scanner scanner = new Scanner(System.in);
+		System.out.print("Re-enter X location: ");
+		this.xLocation = scanner.nextInt();
+		System.out.print("Re-enter Y location: ");
+		this.yLocation = scanner.nextInt();
+		System.out.println("Select direction:");
+		System.out.println("1. Heading up");
+		System.out.println("2. Heading down");
+		System.out.println("3. Heading left");
+		System.out.println("4. Heading right");
+		System.out.print("Re-enter direction: ");
+		int userInput = 0;
+		do{
+			userInput = scanner.nextInt();
+			switch (userInput) {
+				case 1: direction = HEADING_UP; break;
+				case 2: direction = HEADING_DOWN; break;
+				case 3: direction = HEADING_LEFT; break;
+				case 4: direction = HEADING_RIGHT; break;
+				default: System.out.print("Re-enter direction: "); break;
+			}
+		} while (!(1 <= userInput && userInput <= 4));
+	}
+	
+	private void command(int commandType) {
+		switch (commandType) {
+			case EXPLORE: explore(); break;
+			case FASTEST_RUN: fastestRun(); break;
+			case TURN_LEFT: turnLeft(); break;
+			case TURN_RIGHT: turnRight(); break;
+			case MOVE_FORWARD:  moveForward(1); break;
+			case MOVE_BACKWARD: moveBackward(1); break;
+			case TURN_180: turnLeft(); turnLeft(); break;
+			case CHECK_OBSTACLE_IN_FRONT: checkObstacleInFront(); break;
+			case CHECK_OBSTACLE_ON_LEFT: checkObstacleOnLeft(); break;
+			case CHECK_OBSTACLE_ON_RIGHT: checkObstacleOnRight(); break;
+			default: break;
+		}
+	}
+	
+	private void command(int commandType, int distance) {
+		boolean result = false;
+		switch (commandType) {
+			case MOVE_FORWARD:  moveForward(distance); break;
+			case MOVE_BACKWARD: moveBackward(distance); break;
+			default: result = false; break;
+		}
+	}
+	
+	private void turnLeft() {
+		this.direction -= 90;
+		this.direction %= 360;
+		//TODO (command Arduino)
+	}
+	
+	private void turnRight() {
+		this.direction += 90;
+		this.direction %= 360;
+		//TODO (command Arduino)
+	}
+	
+	private void moveForward(int distance) {
+		if (mode == EXPLORE_MODE) {
+			//TODO (command Arduino) -> move half grid, then check left & right, then move half grid
+			checkObstacleOnLeft();
+			checkObstacleOnRight();
+		} else {
+			//TODO (command Arduino) -> move one grid
+		}
+		switch (direction) {
+			case HEADING_UP: this.xLocation += distance; break;
+			case HEADING_DOWN: this.xLocation -= distance; break;
+			case HEADING_LEFT: this.yLocation -= distance; break;
+			case HEADING_RIGHT: this.yLocation += distance; break;
+		}
+	}
+	
+	private void moveBackward(int distance) {
+		switch (direction) {
+			case HEADING_UP: this.xLocation -= distance; break;
+			case HEADING_DOWN: this.xLocation += distance; break;
+			case HEADING_LEFT: this.yLocation += distance; break;
+			case HEADING_RIGHT: this.yLocation -= distance; break;
+		}
+		//TODO (command Arduino)
+	}
+	
+	private void checkObstacleInFront() {
+		boolean obstacleInFrontLeft2GridAway = false;
+		boolean obstacleInFrontRight2GridAway = false;
+		boolean obstacleInFrontLeft = false;
+		boolean obstacleInFrontRight = false;
+		//TODO (command Arduino)
+		if (obstacleInFrontLeft2GridAway) {
+			switch (direction) {
+				case HEADING_UP: 
+					App.arena.getGrid(this.xLocation, this.yLocation+3).markAsObstacle();
+					break;
+				case HEADING_DOWN: 
+					App.arena.getGrid(this.xLocation+1, this.yLocation-2).markAsObstacle();
+					break;
+				case HEADING_LEFT:
+					App.arena.getGrid(this.xLocation-2, this.yLocation).markAsObstacle();
+					break;
+				case HEADING_RIGHT:
+					App.arena.getGrid(this.xLocation+3, this.yLocation+1).markAsObstacle();
+					break;
+			}
+		} else if (obstacleInFrontLeft) {
+			switch (direction) {
+				case HEADING_UP: 
+					App.arena.getGrid(this.xLocation, this.yLocation+2).markAsObstacle();
+					break;
+				case HEADING_DOWN: 
+					App.arena.getGrid(this.xLocation+1, this.yLocation-1).markAsObstacle();
+					break;
+				case HEADING_LEFT:
+					App.arena.getGrid(this.xLocation-1, this.yLocation).markAsObstacle();
+					break;
+				case HEADING_RIGHT:
+					App.arena.getGrid(this.xLocation+2, this.yLocation+1).markAsObstacle();
+					break;
+			}
+		}
+		if (obstacleInFrontRight2GridAway) {
+			switch (direction) {
+				case HEADING_UP: 
+					App.arena.getGrid(this.xLocation+1, this.yLocation+3).markAsObstacle();
+					break;
+				case HEADING_DOWN: 
+					App.arena.getGrid(this.xLocation, this.yLocation-2).markAsObstacle();
+					break;
+				case HEADING_LEFT:
+					App.arena.getGrid(this.xLocation-2, this.yLocation+1).markAsObstacle();
+					break;
+				case HEADING_RIGHT:
+					App.arena.getGrid(this.xLocation+3, this.yLocation).markAsObstacle();
+					break;
+			}
+		} else if (obstacleInFrontRight) {
+			switch (direction) {
+				case HEADING_UP: 
+					App.arena.getGrid(this.xLocation+1, this.yLocation+2).markAsObstacle();
+					break;
+				case HEADING_DOWN: 
+					App.arena.getGrid(this.xLocation, this.yLocation-1).markAsObstacle();
+					break;
+				case HEADING_LEFT:
+					App.arena.getGrid(this.xLocation, this.yLocation+1).markAsObstacle();
+					break;
+				case HEADING_RIGHT:
+					App.arena.getGrid(this.xLocation+2, this.yLocation).markAsObstacle();
+					break;
+			}
+		}
+	
+	}
+	
+	private void checkObstacleOnLeft() {
+		boolean obstacleOnLeft = false;
+		//Assuming that the current location is still previous location instead of new location
+		if (obstacleOnLeft) {
+			switch (direction) {
+				case HEADING_UP:
+					App.arena.getGrid(this.xLocation-1, this.yLocation+1).markAsObstacle();
+					break;
+				case HEADING_DOWN:
+					App.arena.getGrid(this.xLocation+2, this.yLocation).markAsObstacle();
+					break;
+				case HEADING_LEFT:
+					App.arena.getGrid(this.xLocation, this.yLocation-1).markAsObstacle();
+					break;
+				case HEADING_RIGHT:
+					App.arena.getGrid(this.xLocation+1, this.yLocation+2).markAsObstacle();
+					break;
+			}	
+		}
+	}
+	
+	private void checkObstacleOnRight() {
+		boolean obstacleOnRight = false;
+		//Assuming that the current location is still previous location instead of new location
+		if (obstacleOnRight) {
+			switch (direction) {
+				case HEADING_UP:
+					App.arena.getGrid(this.xLocation+2, this.yLocation+1).markAsObstacle();
+					break;
+				case HEADING_DOWN:
+					App.arena.getGrid(this.xLocation-1, this.yLocation).markAsObstacle();
+					break;
+				case HEADING_LEFT:
+					App.arena.getGrid(this.xLocation, this.yLocation+2).markAsObstacle();
+					break;
+				case HEADING_RIGHT:
+					App.arena.getGrid(this.xLocation+1, this.yLocation-1).markAsObstacle();
+					break;
+			}
+		}
+	}
+}
