@@ -56,9 +56,21 @@ public class Grid {
 		return isObstacle;
 	}
 	
+	public boolean isWalkable() {
+		return isSafe && (isVisitedOnce || isVisitedTwice);
+	}
+	
 	public void setCoordinate(int x, int y) {
 		this.xCoordinate = x;
 		this.yCoordinate = y;
+	}
+	
+	public void markAsVisited() {
+		if(isVisitedOnce) {
+			this.isVisitedTwice = true;
+		} else {
+			this.isVisitedOnce = true;
+		}
 	}
 	
 	public void markAsVisitedOnce() {

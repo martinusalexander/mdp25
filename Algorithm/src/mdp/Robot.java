@@ -1,5 +1,7 @@
 package mdp;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 
 public class Robot {
@@ -10,10 +12,10 @@ public class Robot {
 	private static final int FASTEST_MODE = 902;
 	
 	//DIRECTION
-	private static final int HEADING_UP = 0;
-	private static final int HEADING_RIGHT = 90;
-	private static final int HEADING_DOWN = 180;
-	private static final int HEADING_LEFT = 270;
+	public static final int HEADING_UP = 0;
+	public static final int HEADING_RIGHT = 90;
+	public static final int HEADING_DOWN = 180;
+	public static final int HEADING_LEFT = 270;
 	
 	//LIST OF ACTION
 	public static final int MOVE_FORWARD = 800;
@@ -31,20 +33,35 @@ public class Robot {
 	//INITIAL POSITION AND DIRECTION
 	private static final int DESIRED_INITIAL_X_LOCATION = 1;
 	private static final int DESIRED_INITIAL_Y_LOCATION = 1;
-	private static final int DESIRED_INITIAL_DIRECTION = HEADING_DOWN;
+	private static final int DESIRED_INITIAL_DIRECTION = HEADING_LEFT;
 	
 	private int xLocation;
 	private int yLocation;
 	private int direction;
 	private boolean isCalibrated;
 	private int mode;
+	private int previousMovement;
+	private List<Grid> explorationPath;
+	//private List<Integer> explorationCommandList;
+	//private List<Grid> fastestRunPath;
+	private List<Integer> fastestRunCommand;
+	
+	private boolean fastestPathFound;
+	
+	//Helper
+	private Arena arena;
 	
 	public Robot() {
-		this.xLocation = 0;
-		this.yLocation = 0;
-		this.direction = HEADING_DOWN;
+		this.xLocation = 1;
+		this.yLocation = 1;
+		this.direction = HEADING_LEFT;
 		this.isCalibrated = false;
 		this.mode = IDLE_MODE;
+		this.arena = App.arena;
+		this.previousMovement = 0;
+		this.explorationPath = new LinkedList<>();
+		this.fastestRunCommand = new LinkedList<>();
+		this.fastestPathFound = false;
 	}
 	
 	public Robot(int startingXLocation, int startingYLocation, int direction) {
@@ -53,6 +70,11 @@ public class Robot {
 		this.direction = direction;
 		this.isCalibrated = false;
 		this.mode = IDLE_MODE;
+		this.arena = App.arena;
+		this.previousMovement = 0;
+		this.explorationPath = new LinkedList<>();
+		this.fastestRunCommand = new LinkedList<>();
+		this.fastestPathFound = false;
 	}
 	
 	private void explore() {
@@ -61,6 +83,35 @@ public class Robot {
 			calibrateInitialPosition();
 		} while (!isCalibrated);
 		//Code here
+		int repeatedGrid = 0;
+		//int exploredArea = 0;
+		//int exploredPercentage = 0;
+		int counter = 0;
+		while (repeatedGrid <= 20) {
+			counter++;
+			System.out.println("Exploring step: " + counter);
+			
+			//Update arena data in simulator and Android
+			String arenaData = encodeArenaData();
+			//TODO (send data to Android and simulator)
+			System.out.println(arenaData);
+			
+			//Decide appropriate movement
+			int nextCommand = getAppropriateMovement();
+			
+			//Execute the appropriate command
+			this.command(nextCommand);
+			this.previousMovement = nextCommand;
+			
+			//Update path taken
+			Grid grid = arena.getGrid(xLocation, yLocation);
+			explorationPath.add(grid);
+			
+			repeatedGrid = arena.getRepeatedVisitedGrid();
+			
+		}
+		
+		fastestPathFound = this.getFastestPath();
 		
 		
 		//Finishing
@@ -73,23 +124,27 @@ public class Robot {
 		do {
 			calibrateInitialPosition();
 		} while (!isCalibrated);
+		
 		//Code here
+		if (fastestPathFound) {
+			for (Integer command : fastestRunCommand) {
+				this.command(command);
+			}
+		} else {
+			System.out.println("Fastest path not found.");
+		}
 		
 		//Finishing
 		this.mode = IDLE_MODE;
 	}
 	
 	private void calibrateInitialPosition() {
-		if (xLocation != DESIRED_INITIAL_X_LOCATION && yLocation != DESIRED_INITIAL_Y_LOCATION && direction != DESIRED_INITIAL_DIRECTION) {
-			System.out.println("Robot is put in the incorrect position or incorrect direction");
-			correctRobotPosition();
-			return;
-		} else {
-			//TODO (command Arduino)
-			isCalibrated = true;
-		}
+		//TODO (command Arduino)
+		isCalibrated = true;
 	}
-	
+
+//Not useful
+/* 
 	private void correctRobotPosition() {
 		Scanner scanner = new Scanner(System.in);
 		System.out.print("Re-enter X location: ");
@@ -114,17 +169,88 @@ public class Robot {
 			}
 		} while (!(1 <= userInput && userInput <= 4));
 	}
+*/
 	
-//Later we see if this code is usable
-/*
+	private String encodeArenaData() {
+		//TODO (coordinate with Android team)
+		return "";
+	}
+	
+	private int getAppropriateMovement() {
+		int command = 0;
+		switch (direction) {
+			case HEADING_UP:
+				if (!arena.isWall(xLocation, yLocation, HEADING_LEFT, 1) && arena.getGrid(xLocation - 2, yLocation - 1).isWalkable() &&
+						arena.getGrid(xLocation - 2, yLocation).isWalkable() && arena.getGrid(xLocation - 2, yLocation + 1).isWalkable() && previousMovement != TURN_LEFT) { 
+					command = TURN_LEFT;
+				} else if (!arena.isWall(xLocation, yLocation, HEADING_UP, 1) && arena.getGrid(xLocation - 1, yLocation + 2).isWalkable() &&
+						arena.getGrid(xLocation, yLocation + 2).isWalkable() && arena.getGrid(xLocation + 1, yLocation + 2).isWalkable()) {
+					command = MOVE_FORWARD;
+				} else if (!arena.isWall(xLocation, yLocation, HEADING_RIGHT, 1) && arena.getGrid(xLocation + 2, yLocation - 1).isWalkable() &&
+						arena.getGrid(xLocation + 2, yLocation).isWalkable() && arena.getGrid(xLocation + 2, yLocation + 1).isWalkable()) {
+					command = TURN_RIGHT;
+				} else {
+					command = TURN_LEFT;
+				}
+				break;
+			case HEADING_DOWN:
+				if (!arena.isWall(xLocation, yLocation, HEADING_RIGHT, 1) && arena.getGrid(xLocation + 2, yLocation - 1).isWalkable() &&
+						arena.getGrid(xLocation + 2, yLocation).isWalkable() && arena.getGrid(xLocation + 2, yLocation + 1).isWalkable() && previousMovement != TURN_LEFT) { 
+					command = TURN_LEFT;
+				} else if (!arena.isWall(xLocation, yLocation, HEADING_DOWN, 1) && arena.getGrid(xLocation - 1, yLocation - 2).isWalkable() &&
+						arena.getGrid(xLocation, yLocation - 2).isWalkable() && arena.getGrid(xLocation + 1, yLocation - 2).isWalkable()) {
+					command = MOVE_FORWARD;
+				} else if (!arena.isWall(xLocation, yLocation, HEADING_LEFT, 1) && arena.getGrid(xLocation - 2, yLocation - 1).isWalkable() &&
+						arena.getGrid(xLocation - 2, yLocation).isWalkable() && arena.getGrid(xLocation - 2, yLocation + 1).isWalkable()) {
+					command = TURN_RIGHT;
+				} else {
+					command = TURN_LEFT;
+				}
+				break;
+			case HEADING_LEFT:
+				if (!arena.isWall(xLocation, yLocation, HEADING_DOWN, 1) && arena.getGrid(xLocation - 1, yLocation - 2).isWalkable() &&
+						arena.getGrid(xLocation, yLocation - 2).isWalkable() && arena.getGrid(xLocation + 1, yLocation - 2).isWalkable() && previousMovement != TURN_LEFT)  { 
+					command = TURN_LEFT;
+				} else if (!arena.isWall(xLocation, yLocation, HEADING_LEFT, 1) && arena.getGrid(xLocation - 2, yLocation - 1).isWalkable() &&
+						arena.getGrid(xLocation - 2, yLocation).isWalkable() && arena.getGrid(xLocation - 2, yLocation + 1).isWalkable()) {
+					command = MOVE_FORWARD;
+				} else if (!arena.isWall(xLocation, yLocation, HEADING_UP, 1) && arena.getGrid(xLocation - 1, yLocation + 2).isWalkable() &&
+						arena.getGrid(xLocation, yLocation + 2).isWalkable() && arena.getGrid(xLocation + 1, yLocation + 2).isWalkable()) {
+					command = TURN_RIGHT;
+				} else {
+					command = TURN_LEFT;
+				}
+				break;
+			case HEADING_RIGHT:
+				if (!arena.isWall(xLocation, yLocation, HEADING_UP, 1) && arena.getGrid(xLocation - 1, yLocation + 2).isWalkable() &&
+						arena.getGrid(xLocation, yLocation + 2).isWalkable() && arena.getGrid(xLocation + 1, yLocation + 2).isWalkable() && previousMovement != TURN_LEFT) {
+					command = TURN_LEFT;
+				} else if (!arena.isWall(xLocation, yLocation, HEADING_RIGHT, 1) && arena.getGrid(xLocation + 2, yLocation - 1).isWalkable() &&
+						arena.getGrid(xLocation + 2, yLocation).isWalkable() && arena.getGrid(xLocation + 2, yLocation + 1).isWalkable()) {
+					command = MOVE_FORWARD;
+				} else if (!arena.isWall(xLocation, yLocation, HEADING_DOWN, 1) && arena.getGrid(xLocation - 1, yLocation - 2).isWalkable() &&
+						arena.getGrid(xLocation, yLocation - 2).isWalkable() && arena.getGrid(xLocation + 1, yLocation - 2).isWalkable()) {
+					command = TURN_RIGHT;
+				} else {
+					command = TURN_LEFT;
+				}
+		}
+		return command;
+	}
+	
+	private boolean getFastestPath() {
+		//TODO: Append each action to fastestPathCommand
+		return true;
+	}
+	
 	private void command(int commandType) {
 		switch (commandType) {
 			case EXPLORE: explore(); break;
 			case FASTEST_RUN: fastestRun(); break;
 			case TURN_LEFT: turnLeft(); break;
 			case TURN_RIGHT: turnRight(); break;
-			case MOVE_FORWARD:  moveForward(1); break;
-			case MOVE_BACKWARD: moveBackward(1); break;
+			case MOVE_FORWARD:  moveForward(10); break;
+			case MOVE_BACKWARD: moveBackward(10); break;
 			case TURN_180: turnLeft(); turnLeft(); break;
 			case CHECK_OBSTACLE_IN_FRONT: checkObstacleInFront(); break;
 			case CHECK_OBSTACLE_ON_LEFT: checkObstacleOnLeft(); break;
@@ -133,7 +259,9 @@ public class Robot {
 			default: break;
 		}
 	}
-	
+
+	//Later we see if this code is usable
+/*	
 	private void command(int commandType, int data1) {
 		switch (commandType) {
 			//data1 is distance
@@ -202,7 +330,7 @@ public class Robot {
 		}
 	}
 	
-	private void sense() {
+	private void checkNearbyObstacle() {
 		checkObstacleInFront();
 		checkObstacleOnSide();
 	}
@@ -244,77 +372,114 @@ public class Robot {
 		int middleObstacleDistance = ((middleReading - FRONT_SENSOR_DISTANCE_FROM_EDGE + 5) % 10) + 1;
 		int rightObstacleDistance = ((rightReading - FRONT_SENSOR_DISTANCE_FROM_EDGE + 5) % 10) + 1;
 		
+		//Cap the distance to be 3 grid (i.e. make sure the sensors are working optimal)
+		leftObstacleDistance = Math.min(leftObstacleDistance, 4);
+		middleObstacleDistance = Math.min(middleObstacleDistance, 4);
+		rightObstacleDistance = Math.min(rightObstacleDistance, 4);
+		
 		int robotFrontPosition;
 		switch (direction) {
 			case HEADING_UP:
 				robotFrontPosition = yLocation + 1;
-				if (1 <= leftObstacleDistance && leftObstacleDistance <= 4) {
-					for (int i = 1; i <= leftObstacleDistance; i++) {
-						App.arena.getGrid(xLocation - 1, robotFrontPosition + i).markAsObstacle();
+				for (int i = 1; i <= 3; i++) {
+					//Front left
+					arena.setGridAsVisited(xLocation - 1, robotFrontPosition + i);
+					if (i < leftObstacleDistance) {
+						arena.setGridAsSafe(xLocation - 1, robotFrontPosition + i);
+					} else if (i == leftObstacleDistance) {
+						arena.setGridAsObstacle(xLocation - 1, robotFrontPosition + i);
 					}
-				}
-				if (1 <= middleObstacleDistance && middleObstacleDistance <= 4) {
-					for (int i = 1; i <= middleObstacleDistance; i++) {
-						App.arena.getGrid(xLocation, robotFrontPosition + i).markAsObstacle();
+					//Front middle
+					arena.setGridAsVisited(xLocation, robotFrontPosition + i);
+					if (i < middleObstacleDistance) {
+						arena.setGridAsSafe(xLocation, robotFrontPosition + i);
+					} else if (i == middleObstacleDistance) {
+						arena.setGridAsObstacle(xLocation, robotFrontPosition + i);
 					}
-				}
-				if (1 <= rightObstacleDistance && rightObstacleDistance <= 4) {
-					for (int i = 1; i <= rightObstacleDistance; i++) {
-						App.arena.getGrid(xLocation + 1, robotFrontPosition + i).markAsObstacle();
+					//Front right
+					arena.setGridAsVisited(xLocation + 1, robotFrontPosition + i);
+					if (i < rightObstacleDistance) {
+						arena.setGridAsSafe(xLocation + 1, robotFrontPosition + i);
+					} else if (i == rightObstacleDistance) {
+						arena.setGridAsObstacle(xLocation + 1, robotFrontPosition + i);
 					}
 				}
 				break;
 			case HEADING_DOWN:
 				robotFrontPosition = yLocation - 1;
-				if (1 <= leftObstacleDistance && leftObstacleDistance <= 4) {
-					for (int i = 1; i <= leftObstacleDistance; i++) {
-						App.arena.getGrid(xLocation + 1, robotFrontPosition - i).markAsObstacle();
+				for (int i = 1; i <= 3; i++) {
+					//Front left
+					arena.setGridAsVisited(xLocation + 1, robotFrontPosition - i);
+					if (i < leftObstacleDistance) {
+						arena.setGridAsSafe(xLocation + 1, robotFrontPosition - i);
+					} else if (i == leftObstacleDistance) {
+						arena.setGridAsObstacle(xLocation + 1, robotFrontPosition - i);
 					}
-				}
-				if (1 <= middleObstacleDistance && middleObstacleDistance <= 4) {
-					for (int i = 1; i <= middleObstacleDistance; i++) {
-						App.arena.getGrid(xLocation, robotFrontPosition - i).markAsObstacle();
+					//Middle front
+					arena.setGridAsVisited(xLocation, robotFrontPosition - i);
+					if (i < middleObstacleDistance) {
+						arena.setGridAsSafe(xLocation, robotFrontPosition - i);
+					} else if (i == middleObstacleDistance) {
+						arena.setGridAsObstacle(xLocation, robotFrontPosition - i);
 					}
-				}
-				if (1 <= rightObstacleDistance && rightObstacleDistance <= 4) {
-					for (int i = 1; i <= rightObstacleDistance; i++) {
-						App.arena.getGrid(xLocation - 1, robotFrontPosition - i).markAsObstacle();
+					//Front right
+					arena.setGridAsVisited(xLocation - 1, robotFrontPosition - i);
+					if (i < middleObstacleDistance) {
+						arena.setGridAsSafe(xLocation - 1, robotFrontPosition - i);
+					} else if (i == middleObstacleDistance) {
+						arena.setGridAsObstacle(xLocation - 1, robotFrontPosition - i);
 					}
 				}
 				break;
 			case HEADING_RIGHT:
 				robotFrontPosition = xLocation + 1;
-				if (1 <= leftObstacleDistance && leftObstacleDistance <= 4) {
-					for (int i = 1; i <= leftObstacleDistance; i++) {
-						App.arena.getGrid(robotFrontPosition + i, yLocation + 1).markAsObstacle();
+				for (int i = 1; i <= 3; i++) {
+					//Front left
+					arena.setGridAsVisited(robotFrontPosition + i, yLocation + 1);
+					if (i < leftObstacleDistance) {
+						arena.setGridAsSafe(robotFrontPosition + i, yLocation + 1);
+					} else if (i == leftObstacleDistance) {
+						arena.setGridAsObstacle(robotFrontPosition + i, yLocation + 1);
 					}
-				}
-				if (1 <= middleObstacleDistance && middleObstacleDistance <= 4) {
-					for (int i = 1; i <= middleObstacleDistance; i++) {
-						App.arena.getGrid(robotFrontPosition + i, yLocation).markAsObstacle();
+					//Middle front
+					arena.setGridAsVisited(robotFrontPosition + i, yLocation);
+					if (i < middleObstacleDistance) {
+						arena.setGridAsSafe(robotFrontPosition + i, yLocation);
+					} else if (i == middleObstacleDistance) {
+						arena.setGridAsObstacle(robotFrontPosition + i, yLocation);
 					}
-				}
-				if (1 <= rightObstacleDistance && rightObstacleDistance <= 4) {
-					for (int i = 1; i <= rightObstacleDistance; i++) {
-						App.arena.getGrid(robotFrontPosition + i, yLocation - 1).markAsObstacle();
+					//Front right
+					arena.setGridAsSafe(robotFrontPosition + i, yLocation - 1);
+					if (i < rightObstacleDistance) {
+						arena.setGridAsVisited(robotFrontPosition + i, yLocation - 1);
+					} else if (i == rightObstacleDistance) {
+						arena.setGridAsObstacle(robotFrontPosition + i, yLocation - 1);
 					}
 				}
 				break;
 			case HEADING_LEFT:
 				robotFrontPosition = xLocation - 1;
-				if (1 <= leftObstacleDistance && leftObstacleDistance <= 4) {
-					for (int i = 1; i <= leftObstacleDistance; i++) {
-						App.arena.getGrid(robotFrontPosition - i, yLocation - 1).markAsObstacle();
+				for (int i = 1; i <= 3; i++) {
+					//Front left
+					arena.setGridAsVisited(robotFrontPosition - i, yLocation - 1);
+					if (i < leftObstacleDistance) {
+						arena.setGridAsSafe(robotFrontPosition - i, yLocation - 1);
+					} else if (i == leftObstacleDistance) {
+						arena.setGridAsObstacle(robotFrontPosition - i, yLocation - 1);
 					}
-				}
-				if (1 <= middleObstacleDistance && middleObstacleDistance <= 4) {
-					for (int i = 1; i <= middleObstacleDistance; i++) {
-						App.arena.getGrid(robotFrontPosition - i, yLocation).markAsObstacle();
+					//Middle front
+					arena.setGridAsVisited(robotFrontPosition - i, yLocation);
+					if (i < middleObstacleDistance) {
+						arena.setGridAsSafe(robotFrontPosition - i, yLocation);
+					} else if (i == middleObstacleDistance) {
+						arena.setGridAsObstacle(robotFrontPosition - i, yLocation);
 					}
-				}
-				if (1 <= rightObstacleDistance && rightObstacleDistance <= 4) {
-					for (int i = 1; i <= rightObstacleDistance; i++) {
-						App.arena.getGrid(robotFrontPosition - i, yLocation + 1).markAsObstacle();
+					//Front right
+					arena.setGridAsVisited(robotFrontPosition - i, yLocation + 1);
+					if (i < leftObstacleDistance) {
+						arena.setGridAsSafe(robotFrontPosition - i, yLocation + 1);
+					} else if (i == leftObstacleDistance) {
+						arena.setGridAsObstacle(robotFrontPosition - i, yLocation + 1);
 					}
 				}
 				break;
@@ -327,74 +492,43 @@ public class Robot {
 		final int LEFT_SENSOR_DISTANCE_FROM_EDGE = 7;
 		int obstacleDistance = ((reading - LEFT_SENSOR_DISTANCE_FROM_EDGE + 5) % 10) + 1;
 		
-		if (1 <= obstacleDistance && obstacleDistance <= 4) {
-			for (int i = 1; i < obstacleDistance; i++) {
-				switch (direction) {
-					case HEADING_UP:
-						App.arena.getGrid(xLocation - 1 - i, yLocation).markAsObstacle();
-						break;
-					case HEADING_DOWN:
-						App.arena.getGrid(xLocation + 1 + i, yLocation).markAsObstacle();
-						break;
-					case HEADING_LEFT:
-						App.arena.getGrid(xLocation, yLocation - 1 - i).markAsObstacle();
-						break;
-					case HEADING_RIGHT:
-						App.arena.getGrid(xLocation, yLocation + 1 + i).markAsObstacle();
-						break;
-				}
-			}
-		}
-	}
-	
-	private void processDataFromLeftSensor(int x, int y, int reading) {
-		System.out.println("Processing data from left sensors.");
-		System.out.println("Reading: " + reading + ".");
-		final int LEFT_SENSOR_DISTANCE_FROM_EDGE = 7;
-		int obstacleDistance = ((reading - LEFT_SENSOR_DISTANCE_FROM_EDGE + 5) % 10) + 1;
+		//Cap the distance to be 3 grid (i.e. make sure the sensors are working optimal)
+		obstacleDistance = Math.min(obstacleDistance, 4);
 		
-		if (1 <= obstacleDistance && obstacleDistance <= 4) {
-			for (int i = 1; i < obstacleDistance; i++) {
-				switch (direction) {
-					case HEADING_UP:
-						App.arena.getGrid(x - 1 - i, y).markAsObstacle();
-						break;
-					case HEADING_DOWN:
-						App.arena.getGrid(x + 1 + i, y).markAsObstacle();
-						break;
-					case HEADING_LEFT:
-						App.arena.getGrid(x, y - 1 - i).markAsObstacle();
-						break;
-					case HEADING_RIGHT:
-						App.arena.getGrid(x, y + 1 + i).markAsObstacle();
-						break;
-				}
-			}
-		}
-	}
-	
-	private void processDataFromRightSensor(int x, int y, int reading) {
-		System.out.println("Processing data from right sensors.");
-		System.out.println("Reading: " + reading + ".");
-		final int RIGHT_SENSOR_DISTANCE_FROM_EDGE = 7;
-		int obstacleDistance = ((reading - RIGHT_SENSOR_DISTANCE_FROM_EDGE + 5) % 10) + 1;
-		
-		if (1 <= obstacleDistance && obstacleDistance <= 4) {
-			for (int i = 1; i < obstacleDistance; i++) {
-				switch (direction) {
-					case HEADING_UP:
-						App.arena.getGrid(x + 1 + i, y).markAsObstacle();
-						break;
-					case HEADING_DOWN:
-						App.arena.getGrid(x - 1 - i, y).markAsObstacle();
-						break;
-					case HEADING_LEFT:
-						App.arena.getGrid(x, y + 1 + i).markAsObstacle();
-						break;
-					case HEADING_RIGHT:
-						App.arena.getGrid(x, y - 1 - i).markAsObstacle();
-						break;
-				}
+		for (int i = 1; i <= 3; i++) {
+			switch (direction) {
+				case HEADING_UP:
+					arena.setGridAsVisited(xLocation - 1 - i, yLocation);
+					if (i < obstacleDistance) {
+						arena.setGridAsSafe(xLocation - 1 - i, yLocation);
+					} else if (i == obstacleDistance) {
+						arena.setGridAsObstacle(xLocation - 1 - i, yLocation);
+					}
+					break;
+				case HEADING_DOWN:
+					arena.setGridAsVisited(xLocation + 1 + i, yLocation);
+					if (i < obstacleDistance) {
+						arena.setGridAsSafe(xLocation + 1 + i, yLocation);
+					} else if (i == obstacleDistance) {
+						arena.setGridAsObstacle(xLocation + 1 + i, yLocation);
+					}
+					break;
+				case HEADING_LEFT:
+					arena.setGridAsVisited(xLocation, yLocation - 1 - i);
+					if (i < obstacleDistance) {
+						arena.setGridAsSafe(xLocation, yLocation - 1 - i);
+					} else if (i == obstacleDistance) {
+						arena.setGridAsObstacle(xLocation, yLocation - 1 - i);
+					}
+					break;
+				case HEADING_RIGHT:
+					arena.setGridAsVisited(xLocation, yLocation + 1 + i);
+					if (i < obstacleDistance) {
+						arena.setGridAsSafe(xLocation, yLocation + 1 + i);
+					} else if (i == obstacleDistance) {
+						arena.setGridAsObstacle(xLocation, yLocation + 1 + i);
+					}
+					break;
 			}
 		}
 	}
@@ -405,22 +539,43 @@ public class Robot {
 		final int RIGHT_SENSOR_DISTANCE_FROM_EDGE = 7;
 		int obstacleDistance = ((reading - RIGHT_SENSOR_DISTANCE_FROM_EDGE + 5) % 10) + 1;
 		
-		if (1 <= obstacleDistance && obstacleDistance <= 4) {
-			for (int i = 1; i < obstacleDistance; i++) {
-				switch (direction) {
-					case HEADING_UP:
-						App.arena.getGrid(xLocation + 1 + i, yLocation).markAsObstacle();
-						break;
-					case HEADING_DOWN:
-						App.arena.getGrid(xLocation - 1 - i, yLocation).markAsObstacle();
-						break;
-					case HEADING_LEFT:
-						App.arena.getGrid(xLocation, yLocation + 1 + i).markAsObstacle();
-						break;
-					case HEADING_RIGHT:
-						App.arena.getGrid(xLocation, yLocation - 1 - i).markAsObstacle();
-						break;
-				}
+		//Cap the distance to be 3 grid (i.e. make sure the sensors are working optimal)
+		obstacleDistance = Math.min(obstacleDistance, 4);
+		
+		for (int i = 1; i <= 3; i++) {
+			switch (direction) {
+				case HEADING_UP:
+					arena.setGridAsVisited(xLocation + 1 + i, yLocation);
+					if (i < obstacleDistance) {
+						arena.setGridAsSafe(xLocation + 1 + i, yLocation);
+					} else if (i == obstacleDistance) {
+						arena.setGridAsObstacle(xLocation + 1 + i, yLocation);
+					}
+					break;
+				case HEADING_DOWN:
+					arena.setGridAsVisited(xLocation - 1 - i, yLocation);
+					if (i < obstacleDistance) {
+						arena.setGridAsSafe(xLocation - 1 - i, yLocation);
+					} else if (i == obstacleDistance) {
+						arena.setGridAsObstacle(xLocation - 1 - i, yLocation);
+					}
+					break;
+				case HEADING_LEFT:
+					arena.setGridAsVisited(xLocation, yLocation + 1 + i);
+					if (i < obstacleDistance) {
+						arena.setGridAsSafe(xLocation, yLocation + 1 + i);
+					} else if (i == obstacleDistance) {
+						arena.setGridAsObstacle(xLocation, yLocation + 1 + i);
+					}
+					break;
+				case HEADING_RIGHT:
+					arena.setGridAsVisited(xLocation, yLocation - 1 - i);
+					if (i < obstacleDistance) {
+						arena.setGridAsSafe(xLocation, yLocation - 1 - i);
+					} else if (i == obstacleDistance) {
+						arena.setGridAsObstacle(xLocation, yLocation - 1 - i);
+					}
+					break;
 			}
 		}
 	}

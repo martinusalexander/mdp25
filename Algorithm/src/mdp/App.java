@@ -22,6 +22,6 @@ public class App {
 	
 	public static void generateRobot() {
 		//Initialize robot
-		robot = new Robot(0, 0, Robot.HEADING_UP);
+		robot = new Robot(0, 0, Robot.HEADING_LEFT);
 	}
 }
