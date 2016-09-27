@@ -1,19 +1,27 @@
 package mdp;
 
+import java.math.BigInteger;
+import java.util.Scanner;
+
 public class Arena {
 	
-	private static final int ARENA_LENGTH = 15;
-	private static final int ARENA_HEIGHT = 20;
+	public static final int ARENA_LENGTH = 15;
+	public static final int ARENA_HEIGHT = 20;
 	
-	private static final int UP = 0;
-	private static final int RIGHT = 90;
-	private static final int DOWN = 180;
-	private static final int LEFT = 270;
+	public static final int UP = 0;
+	public static final int RIGHT = 90;
+	public static final int DOWN = 180;
+	public static final int LEFT = 270;
 	
 	private Grid[][] grid;
 	
 	public Arena() {
-		grid = new Grid[ARENA_LENGTH][ARENA_HEIGHT];
+		this.grid = new Grid[ARENA_LENGTH][ARENA_HEIGHT];
+		for (int i = 0; i < ARENA_LENGTH; i++) {
+			for (int j = 0; j < ARENA_HEIGHT; j++) {
+				grid[i][j] = new Grid(i, j);
+			}
+		}
 		//By default, each grid is not visited, not safe, and not obstacle
 	}
 	
@@ -22,8 +30,67 @@ public class Arena {
 			Grid selectedGrid = grid[x][y];
 			return selectedGrid;
 		} catch (IndexOutOfBoundsException e) {
+			//System.out.println(x + " " + y);
+			//System.out.println("Index");
+			return null;
+		} catch (NullPointerException e) {
+			//System.out.println("Null");
 			return null;
 		}
+	}
+	
+	public String getArenaDataPart1() {
+		//Initial padding
+		String dataBinary = "11";
+		for (int j = 0; j < ARENA_HEIGHT; j++) {
+			for (int i = 0; i < ARENA_LENGTH; i++) {
+				if (this.getGrid(i, j).isVisited()) {
+					dataBinary += "1";
+				} else {
+					dataBinary += "0";
+				}
+			}
+		}
+		//Final padding
+		dataBinary += "11";
+		//Reference: http://stackoverflow.com/a/16918459
+		BigInteger bigInt = new BigInteger(dataBinary, 2);
+		String encodedData = bigInt.toString(16);
+		return encodedData;
+	}
+	
+	public String getArenaDataPart2() {
+		String dataBinary = "";
+		for (int j = 0; j < ARENA_HEIGHT; j++) {
+			for (int i = 0; i < ARENA_LENGTH; i++) {
+				if (this.getGrid(i, j).isVisited()) {
+					if (this.getGrid(i, j).isObstacle()) {
+						System.out.println("X" + i + " " + j);
+						dataBinary += "1";
+					} else {
+						dataBinary += "0";
+					}
+				} 
+				
+			}
+		}
+		System.out.println("M " + dataBinary);
+		while (dataBinary.length() % 8 != 0)  {
+			dataBinary += "0";
+		}
+		for (int i = 0; i < 8; i++) {
+			dataBinary = "1" + dataBinary;
+		}
+		
+		System.out.println(dataBinary);
+		//Reference: http://stackoverflow.com/a/16918459
+		BigInteger bigInt = new BigInteger(dataBinary, 2);
+		String encodedData = bigInt.toString(16);
+		encodedData = encodedData.substring(2);
+		System.out.println("N " + encodedData);
+		System.out.println("F" + encodedData.length());
+		return encodedData;
+		
 	}
 	
 	public int getExploredGrid() {
@@ -51,6 +118,9 @@ public class Arena {
 	}
 	
 	public boolean isObstacleGrid(int x, int y) {
+		if (isWall(x, y)) {
+			return true;
+		}
 		Grid grid = getGrid(x, y);
 		if (grid.isObstacle()) {
 			return true;
@@ -68,19 +138,30 @@ public class Arena {
 		}
 	}
 	
-	public void setGridAsVisited(int x, int y) {
-		Grid grid = getGrid(x, y);
-		grid.markAsVisited();
+	public boolean isWalkableGrid(int x, int y) {
+		if (isWall(x, y)) {
+			//System.out.println(x + " " + y);
+			//System.out.println("Wall");
+			return false;
+		} else if (isObstacleGrid(x, y)) {
+			//System.out.println("Obstacle");
+			return false;
+		}
+		return true;
 	}
 	
-	public void setGridAsSafe(int x, int y) {
+	public void setGridAsVisited(int x, int y) {
 		Grid grid = getGrid(x, y);
-		grid.markAsSafe();
+		if (grid != null) {
+			grid.markAsVisited();
+		}
 	}
 	
 	public void setGridAsObstacle(int x, int y) {
 		Grid grid = getGrid(x, y);
-		grid.markAsObstacle();
+		if (grid != null) {
+			grid.markAsObstacle();
+		}
 	}
 	
 	public int getNumberOfVisit(int x, int y) {
@@ -91,6 +172,29 @@ public class Arena {
 			return 2;
 		} else {
 			return 0;
+		}
+	}
+	
+	public void findSafeGrid() {
+		for (int i = 0; i < ARENA_LENGTH; i++) {
+			for (int j = 0; j < ARENA_HEIGHT; j++) {
+				Grid grid = getGrid(i, j);
+				//Grids near wall are not safe
+				if (i == 0 || i == ARENA_LENGTH - 2 || j == 0 || j == ARENA_HEIGHT - 2) {
+					grid.markAsNotSafe();
+				} else 
+					if (this.isWalkableGrid(i - 1, j - 1) &&
+							this.isWalkableGrid(i - 1, j) &&
+							this.isWalkableGrid(i - 1, j + 1) &&
+							this.isWalkableGrid(i, j - 1) &&
+							this.isWalkableGrid(i, j) &&
+							this.isWalkableGrid(i , j + 1) &&
+							this.isWalkableGrid(i + 1, j - 1) &&
+							this.isWalkableGrid(i + 1, j) &&
+							this.isWalkableGrid(i + 1, j + 1))	{
+						grid.markAsSafe();
+				}
+			}
 		}
 	}
 	
@@ -149,12 +253,12 @@ public class Arena {
 	
 	public boolean isWall(int x, int y) {
 		//x, y is the coordinated of selected grid
-		try {
-			this.getGrid(x, y);
-		} catch (IndexOutOfBoundsException e) {
+		Grid grid = this.getGrid(x, y);
+		if (grid == null) {
 			return true;
+		} else {
+			return false;
 		}
-		return false;
 	}
 	
 	public boolean isWall(int x, int y, int direction, int distance) {
@@ -165,29 +269,51 @@ public class Arena {
 		int yTarget = 0;
 		switch (direction) {
 			case UP:
+				xTarget = x;
+				yTarget = y + 1 + distance;
+				break;
+			case RIGHT:
 				xTarget = x + 1 + distance;
 				yTarget = y;
 				break;
-			case RIGHT:
-				xTarget = x;
-				yTarget = yTarget + 1 + distance;
-				break;
 			case DOWN:
+				xTarget = x;
+				yTarget = y - 1 - distance;
+				break;
+			case LEFT:
 				xTarget = x - 1 - distance;
 				yTarget = y;
 				break;
-			case LEFT:
-				xTarget = x;
-				yTarget = yTarget - 1 - distance;
-				break;
 		}
-		try {
-			this.getGrid(xTarget, yTarget);
-		} catch (IndexOutOfBoundsException e) {
+		Grid grid = this.getGrid(xTarget, yTarget);
+		if (grid == null) {
 			return true;
+		} else {
+			return false;
 		}
-		return false;
 	}
+	
+	public int[][] getSurrondedGrid(int x, int y) {
+		int n = 0;
+		int[][] result = new int[9][2];
+		for (int i = -1; i <= 1; i++) {
+			for (int j = -1; j <= 1; j++) {
+				result[n][0] = x + i;
+				result[n][1] = y + j;
+				n++;
+			}
+		}
+		return result;
+	}
+	
+	public int[][] getReachableGridIndices(int xLocation, int yLocation) throws ArrayIndexOutOfBoundsException{
+        int[][] reachableNodes = new int[4][2];
+        reachableNodes[0] = new int[]{xLocation-1, yLocation};
+        reachableNodes[1] = new int[]{xLocation, yLocation+1};
+        reachableNodes[2] = new int[]{xLocation+1, yLocation};
+        reachableNodes[3] = new int[]{xLocation, yLocation-1};
+        return reachableNodes;
+    }
 	
 	
 

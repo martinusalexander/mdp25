@@ -1,6 +1,6 @@
 package mdp;
 
-public class Grid {
+public class Grid implements Comparable<Grid>, Updatable {
 
 	private int xCoordinate;
 	private int yCoordinate;
@@ -9,6 +9,14 @@ public class Grid {
 	private boolean isVisitedTwice;
 	private boolean isObstacle;
 	private boolean isSafe;
+	
+	//FOR A* ALGO
+	private int pathCost = Integer.MAX_VALUE;
+	private int heuristic;
+	private int[] previousGrid;
+	private boolean pathCostUpdated = false;
+	private boolean isExpanded = false;
+	private int direction;
 	
 	public Grid(int x, int y) {
 		this.xCoordinate = x;
@@ -40,6 +48,10 @@ public class Grid {
 		return location;
 	}
 	
+	public boolean isVisited() {
+		return (isVisitedOnce || isVisitedTwice);
+	}
+	
 	public boolean isVisitedOnce() {
 		return isVisitedOnce;
 	}
@@ -57,7 +69,7 @@ public class Grid {
 	}
 	
 	public boolean isWalkable() {
-		return isSafe && (isVisitedOnce || isVisitedTwice);
+		return !isObstacle && (isVisitedOnce || isVisitedTwice);
 	}
 	
 	public void setCoordinate(int x, int y) {
@@ -104,5 +116,69 @@ public class Grid {
 	public void markAsNotSafe() {
 		this.isSafe = false;
 	}
+	
+	public int getHeuristic() {
+		return this.heuristic;
+	}
+	
+	public void setHeuristic(int heuristic) {
+		this.heuristic = heuristic;
+	}
+	
+	public void setPathCost(int pathCost) {
+		this.pathCost = pathCost;
+	}
+	
+	public int getPathCost() {
+		return this.pathCost;
+	}
+	
+	public int getTotalCost() {
+		return this.pathCost + this.heuristic;
+	}
+
+	@Override
+	public int compareTo(Grid g) {
+		if(this.getTotalCost() > g.getTotalCost())
+            return 1;
+        else if(this.getTotalCost() < g.getTotalCost())
+            return -1;
+        else
+            return 0;
+	}
+	
+	public int[] getPreviousGrid() {
+		return this.previousGrid;
+	}
+	
+	public void setPreviousGrid(int[] previousGrid) {
+		this.previousGrid = previousGrid;
+	}
+	
+	@Override
+	public boolean needUpdate() {
+		return pathCostUpdated;
+	}
+
+	public void setPathCostUpdated(boolean update) {
+		this.pathCostUpdated = update;
+	}
+	
+	public boolean isExpanded() {
+		return this.isExpanded;
+	}
+	
+	public void setExpanded(boolean expanded) {
+		this.isExpanded = expanded;
+	}
+	
+	public int getDirection() {
+		return this.direction;
+	}
+	
+	public void setDirection(int direction) {
+		this.direction = direction;
+	}
+
 
 }
