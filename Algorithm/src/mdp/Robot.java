@@ -1,20 +1,19 @@
 package mdp;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 
-import com.sun.beans.finder.FieldFinder;
+import org.json.simple.JSONObject;
 
 public class Robot {
 	
 	//MODE
-	private static final int IDLE_MODE = 900;
-	private static final int EXPLORE_MODE = 901;
-	private static final int FASTEST_MODE = 902;
+	public static final int IDLE_MODE = 900;
+	public static final int EXPLORE_MODE = 901;
+	public static final int FASTEST_MODE = 902;
 	
 	//DIRECTION
 	public static final int HEADING_UP = 0;
@@ -35,11 +34,6 @@ public class Robot {
 	public static final int EXPLORE = 809;
 	public static final int FASTEST_RUN = 810;
 	
-	//INITIAL POSITION AND DIRECTION
-	private static final int DESIRED_INITIAL_X_LOCATION = 1;
-	private static final int DESIRED_INITIAL_Y_LOCATION = 1;
-	private static final int DESIRED_INITIAL_DIRECTION = HEADING_LEFT;
-	
 	private int xLocation;
 	private int yLocation;
 	private int direction;
@@ -58,16 +52,16 @@ public class Robot {
 	private Arena arena;
 	
 	//A* Algo
-	public static final double TURN_TO_MAKE_DIAGONAL_TURN = 0.8;
+	public static final double TURN_TO_MAKE_DIAGONAL_TURN = 1.2;
 	public static final double COST_TO_MOVE_ONE_STEP = 1;
-    public static final double COST_TO_MAKE_A_TURN = 1;
+    public static final double COST_TO_MAKE_A_TURN = 1.5;
     
     private static double fastestRunCost = 0;
 	
 	public Robot() {
 		this.xLocation = 1;
 		this.yLocation = 1;
-		this.direction = HEADING_LEFT;
+		this.direction = HEADING_UP;
 		this.isCalibrated = false;
 		this.mode = IDLE_MODE;
 		this.arena = App.arena;
@@ -92,6 +86,7 @@ public class Robot {
 	
 	private void explore() {
 		this.mode = EXPLORE_MODE;
+		//App.listenToAndroidThread.interrupt();
 		do {
 			calibrateInitialPosition();
 		} while (!isCalibrated);
@@ -108,6 +103,15 @@ public class Robot {
 			counter++;
 			System.out.println("Exploring step: " + counter);
 			
+			String ACKMessage;
+			if (!App.isSimulation) {
+				App.connectionManager.sendMessage("M;;", ConnectionManager.SEND_TO_ROBOT);
+				ACKMessage = App.connectionManager.readMessage();
+				processSensorData(ACKMessage.substring(1));
+			} else {
+				processSensorData("");
+			}
+			
 			//Decide appropriate movement
 			int nextCommand = getAppropriateExplorationMovement();
 			
@@ -116,15 +120,14 @@ public class Robot {
 			System.out.println(nextCommand);
 			System.out.println(this.xLocation + " " + this.yLocation + " " + this.direction);
 			this.previousMovement = nextCommand;
-			try {
+			/*try {
 			    Thread.sleep(100);                 //1000 milliseconds is one second.
 			} catch(InterruptedException ex) {
 			    Thread.currentThread().interrupt();
-			}
+			}*/
 			//Update arena data in simulator and Android
-			String arenaData = sendArenaData();
+			sendArenaData();
 			//TODO (send data to Android and simulator)
-			System.out.println(arenaData);
 			
 			//Update path taken
 			Grid grid = arena.getGrid(xLocation, yLocation);
@@ -133,23 +136,36 @@ public class Robot {
 			repeatedGrid = arena.getExploredGrid();			
 		} while (!(xLocation == 1 && yLocation == 1 && counter > 10));
 		
-		fastestPathFound = this.getFastestPath();
+		while (direction != HEADING_UP) {
+			this.command(TURN_RIGHT);
+		}
 		
 		//Finishing
 		this.mode = IDLE_MODE;
+		//App.listenToAndroidThread.start();
 		
 	}
 	
 	private void fastestRun() {
 		this.mode = FASTEST_MODE;
+		//App.listenToAndroidThread.interrupt();
 		do {
 			calibrateInitialPosition();
 		} while (!isCalibrated);
 		
 		//Code here
+		fastestPathFound = getFastestPath();
 		if (fastestPathFound) {
 			for (Integer command : fastestRunCommand) {
+				
 				this.command(command);
+				/*try {
+				    Thread.sleep(100);                 //1000 milliseconds is one second.
+				} catch(InterruptedException ex) {
+				    Thread.currentThread().interrupt();
+				}*/
+				sendArenaData();
+				
 			}
 		} else {
 			System.out.println("Fastest path not found.");
@@ -157,55 +173,53 @@ public class Robot {
 		
 		//Finishing
 		this.mode = IDLE_MODE;
+		//App.listenToAndroidThread.start();
 	}
 	
 	private void calibrateInitialPosition() {
 		//TODO (command Arduino)
 		isCalibrated = true;
 	}
-
-//Not useful
-/* 
-	private void correctRobotPosition() {
-		Scanner scanner = new Scanner(System.in);
-		System.out.print("Re-enter X location: ");
-		this.xLocation = scanner.nextInt();
-		System.out.print("Re-enter Y location: ");
-		this.yLocation = scanner.nextInt();
-		System.out.println("Select direction:");
-		System.out.println("1. Heading up");
-		System.out.println("2. Heading down");
-		System.out.println("3. Heading left");
-		System.out.println("4. Heading right");
-		System.out.print("Re-enter direction: ");
-		int userInput = 0;
-		do{
-			userInput = scanner.nextInt();
-			switch (userInput) {
-				case 1: direction = HEADING_UP; break;
-				case 2: direction = HEADING_DOWN; break;
-				case 3: direction = HEADING_LEFT; break;
-				case 4: direction = HEADING_RIGHT; break;
-				default: System.out.print("Re-enter direction: "); break;
-			}
-		} while (!(1 <= userInput && userInput <= 4));
-	}
-*/
 	
-	private String sendArenaData() {
+	private void sendArenaData() {
 		String arenaData1 = App.arena.getArenaDataPart1();
 		String arenaData2 = App.arena.getArenaDataPart2();
+		String arenaData1ForAndroid = App.arena.getArenaData1ForAndroid();
+		String arenaData2ForAndroid = App.arena.getArenaData2ForAndroid();
+		//System.out.println(arenaDataForAndroid);
 		//TODO (coordinate with Android team)
-		//Do something
-		
 		//Update simulator
 		App.simulator.updateMap(arenaData1, arenaData2);
-		return "";
+		if (!App.isSimulation) {
+			JSONObject jsonObject = new JSONObject();
+			jsonObject.put("robotPosition", "[" + (yLocation-1) + "," + (xLocation-1) + "," + (direction) + "]");
+			App.connectionManager.sendMessage(jsonObject.toString(), ConnectionManager.SEND_TO_ANDROID);
+			/*try {
+			    Thread.sleep(25);                 //1000 milliseconds is one second.
+			} catch(InterruptedException ex) {
+			    Thread.currentThread().interrupt();
+			}*/
+			jsonObject = new JSONObject();
+			jsonObject.put("obstacle", arenaData1ForAndroid);
+			App.connectionManager.sendMessage(jsonObject.toString(), ConnectionManager.SEND_TO_ANDROID);
+			/*try {
+			    Thread.sleep(25);                 //1000 milliseconds is one second.
+			} catch(InterruptedException ex) {
+			    Thread.currentThread().interrupt();
+			}*/
+			jsonObject = new JSONObject();
+			jsonObject.put("sensor", arenaData2ForAndroid);
+			App.connectionManager.sendMessage(jsonObject.toString(), ConnectionManager.SEND_TO_ANDROID);
+			/*try {
+			    Thread.sleep(25);                 //1000 milliseconds is one second.
+			} catch(InterruptedException ex) {
+			    Thread.currentThread().interrupt();
+			}*/
+		}
 	}
-	
 	private int getAppropriateExplorationMovement() {
 		int command = 0;
-		System.out.println(previousMovement);
+		//System.out.println(previousMovement);
 		switch (direction) {
 			case HEADING_UP:
 				if (!arena.isWall(xLocation, yLocation, HEADING_LEFT, 1) && arena.isWalkableGrid(xLocation - 2, yLocation - 1) &&
@@ -218,7 +232,6 @@ public class Robot {
 						arena.isWalkableGrid(xLocation + 2, yLocation) && arena.isWalkableGrid(xLocation + 2, yLocation + 1)) {
 					command = TURN_RIGHT;
 				} else {
-					/*System.out.println("Else");*/
 					command = TURN_LEFT;
 				}
 				break;
@@ -233,11 +246,6 @@ public class Robot {
 						arena.isWalkableGrid(xLocation - 2, yLocation) && arena.isWalkableGrid(xLocation - 2, yLocation + 1)) {
 					command = TURN_RIGHT;
 				} else {
-					/*System.out.println(!arena.isWall(xLocation, yLocation, HEADING_LEFT, 1));
-					System.out.println(arena.isWalkableGrid(xLocation - 2, yLocation - 1));
-					System.out.println(arena.isWalkableGrid(xLocation - 2, yLocation));
-					System.out.println(arena.isWalkableGrid(xLocation - 2, yLocation + 1));
-					System.out.println("Else");*/
 					command = TURN_LEFT;
 				}
 				break;
@@ -252,7 +260,6 @@ public class Robot {
 						arena.isWalkableGrid(xLocation, yLocation + 2) && arena.isWalkableGrid(xLocation + 1, yLocation + 2)) {
 					command = TURN_RIGHT;
 				} else {
-					/*System.out.println("Else");*/
 					command = TURN_LEFT;
 				}
 				break;
@@ -267,7 +274,6 @@ public class Robot {
 						arena.isWalkableGrid(xLocation, yLocation - 2) && arena.isWalkableGrid(xLocation + 1, yLocation - 2)) {
 					command = TURN_RIGHT;
 				} else {
-					/*System.out.println("Else");*/
 					command = TURN_LEFT;
 				}
 		}
@@ -275,9 +281,8 @@ public class Robot {
 	}
 	
 	private boolean getFastestPath() {
-		
 		final double TURN_COST = 0.8;
-		final int[] GOAL = {14, 19};
+		final int[] GOAL = {13, 18};
 		final int[] START = {1, 1};
 		final int START_ORIENTATION = Robot.HEADING_UP;
 		arena.findSafeGrid();
@@ -294,8 +299,10 @@ public class Robot {
         
         startGrid.setPathCost(0);
         startGrid.setPreviousGrid(null);
-
+        startGrid.setDirection(Robot.HEADING_UP);
+        
         HeapPriorityQueue<Grid> queue = new HeapPriorityQueue<Grid>();
+        queue.offer(startGrid);
 
         expand(arena, START, queue);
 
@@ -303,7 +310,6 @@ public class Robot {
 
         while(queue.size()>0){    //repeatedly polling from the queue and expand
             expandingGrid = queue.poll();
-
             //*********debugging code
             //virtualMap.printExpanded();
 
@@ -333,8 +339,8 @@ public class Robot {
     public void expand(Arena arena, int[] currentGridIndex, HeapPriorityQueue<Grid> queue) {
         Grid thisGrid = arena.getGrid(currentGridIndex[0], currentGridIndex[1]);
     	thisGrid.setExpanded(true);
-        //System.out.println("****Expanded index: " + thisNode.index[0] + ", " + thisNode.index[1]);
-        for(int[] reachableNodeIndex : arena.getReachableGridIndices(this.xLocation, this.yLocation)){
+        //System.out.println("****Expanded index: " + thisGrid.getX() + ", " + thisGrid.getY());
+        for(int[] reachableNodeIndex : arena.getReachableGridIndices(thisGrid.getX(), thisGrid.getY())){
             //trying to mark reachable nodes and ignore those that are out of index bound
             try {
             	mark(arena, reachableNodeIndex, currentGridIndex, queue);
@@ -349,12 +355,13 @@ public class Robot {
 	
 	private void mark(Arena arena, int[] currentPosition, int[] previousPosition, HeapPriorityQueue<Grid> queue) {
         if(arena.getGrid(currentPosition[0], currentPosition[1]).isSafe()) {
-            int orientation = getRelativeOrientation(currentPosition, previousPosition);
+            Grid previousGrid = arena.getGrid(previousPosition[0], previousPosition[1]);
+        	int orientation = getRelativeOrientation(currentPosition, previousPosition);
             double stepCost = COST_TO_MOVE_ONE_STEP;
             //if previous orientation is the same as relative orientation, then no need to turn
-            if(orientation == this.direction){}
+            if(orientation == previousGrid.getDirection()){}
             //if orientation is opposite, turn twice
-            else if(orientation == ((this.direction + 90) % 360)) {
+            else if(orientation == ((previousGrid.getDirection() + 90) % 360)) {
                 stepCost += 2 * COST_TO_MAKE_A_TURN;
             }
             //otherwise, turn once
@@ -363,13 +370,12 @@ public class Robot {
             }
             if (arena.getGrid(previousPosition[0], previousPosition[1]).getPathCost() + stepCost < arena.getGrid(currentPosition[0], currentPosition[1]).getPathCost()) {
                 Grid thisGrid = arena.getGrid(currentPosition[0], currentPosition[1]);
-            	Grid previousGrid = arena.getGrid(previousPosition[0], previousPosition[1]);
                 if(thisGrid.getPathCost() == Integer.MAX_VALUE) {
                     queue.offer(thisGrid);
                 }
                 thisGrid.setPathCostUpdated(true);
                 thisGrid.setPathCost((int) (previousGrid.getPathCost() + stepCost));
-                thisGrid.setPreviousGrid(previousGrid.getPreviousGrid());
+                thisGrid.setPreviousGrid(previousGrid.getXY());
                 thisGrid.setDirection(orientation);
             }
         }
@@ -378,7 +384,7 @@ public class Robot {
 	public static int getRelativeOrientation(int[] destination, int[] origin){
 		int xDifference = destination[0] - origin[0];
 		int yDifference = destination[1] - origin[1];
-		return yDifference == 0 ? (xDifference > 0 ? Arena.UP : Arena.DOWN) : (yDifference > 0 ? Arena.RIGHT : Arena.LEFT);
+		return yDifference == 0 ? (xDifference > 0 ? Arena.RIGHT : Arena.LEFT) : (yDifference > 0 ? Arena.UP : Arena.DOWN);
 	}
 	
 	public ArrayList getFastestRunPath(int[] start, int[] end) {
@@ -386,9 +392,15 @@ public class Robot {
 		Grid grid = arena.getGrid(end[0], end[1]);
 		this.fastestRunCost = grid.getPathCost();
 		gridList.add(grid);
-		while (arena.getGrid(grid.getPreviousGrid()[0], grid.getPreviousGrid()[1]) != null) {
+		while (true) {
+			//System.out.println(grid.getPreviousGrid()[0] + " " + grid.getPreviousGrid()[1]);
 			grid = arena.getGrid(grid.getPreviousGrid()[0], grid.getPreviousGrid()[1]);
+			
 			gridList.add(grid);
+			if (grid.getPreviousGrid()[0] == 1 && grid.getPreviousGrid()[1] == 1) {
+				gridList.add(arena.getGrid(1, 1));
+				break;
+			}
 		}
 		Collections.reverse(gridList);
 		return gridList;
@@ -404,10 +416,10 @@ public class Robot {
 			case MOVE_FORWARD:  moveForward(); break;
 			case MOVE_BACKWARD: moveBackward(); break;
 			case TURN_180: turnLeft(); turnLeft(); break;
-			case CHECK_OBSTACLE_IN_FRONT: checkObstacleInFront(); break;
+			/*case CHECK_OBSTACLE_IN_FRONT: checkObstacleInFront(); break;
 			case CHECK_OBSTACLE_ON_LEFT: checkObstacleOnLeft(); break;
 			case CHECK_OBSTACLE_ON_RIGHT: checkObstacleOnRight(); break;
-			case CHECK_OBSTACLE_ON_SIDE: checkObstacleOnSide(); break;
+			case CHECK_OBSTACLE_ON_SIDE: checkObstacleOnSide(); break;*/
 			default: break;
 		}
 	}
@@ -434,36 +446,59 @@ public class Robot {
 	}
 */
 	private void turnLeft() {
+		String ACKMessage;
 		System.out.println("Turning left.");
 		this.direction -= 90;
 		this.direction += 360;
 		this.direction %= 360;
-		//TODO (command Arduino)
+		
+		if (!App.isSimulation) {
+			//TODO (command Arduino)
+			App.connectionManager.sendMessage("L;;", ConnectionManager.SEND_TO_ROBOT);
+			ACKMessage = App.connectionManager.readMessage();
+			if (mode == EXPLORE_MODE) {
+				processSensorData(ACKMessage.substring(4));
+			}
+		} else {
+			processSensorData("");
+		}
 	}
 	
 	private void turnRight() {
+		String ACKMessage;
 		System.out.println("Turning right.");
 		this.direction += 90;
 		this.direction += 360;
 		this.direction %= 360;
-		//TODO (command Arduino)
+		if (!App.isSimulation) {
+			//TODO (command Arduino)
+			App.connectionManager.sendMessage("R;;", ConnectionManager.SEND_TO_ROBOT);
+			ACKMessage = App.connectionManager.readMessage();
+			if (mode == EXPLORE_MODE) {
+				processSensorData(ACKMessage.substring(4));
+			}
+		} else {
+			processSensorData("");
+		}
 	}
 	
 	private void moveForward() {
-		if (mode == EXPLORE_MODE) {
-			System.out.println("Moving forward and sense.");
-			int frontLeftReading = 0;
-			int frontMiddleReading = 0;
-			int frontRightReading = 0;
-			int leftSensorReading = 0;
-			int rightSensorReading = 0;
-			//TODO (command Arduino) -> move forward and sense
-			processDataFromFrontSensors(frontLeftReading, frontMiddleReading, frontRightReading);
-			processDataFromLeftSensor(leftSensorReading);
-			processDataFromRightSensor(rightSensorReading);
-		} else {
+		if (!App.isSimulation) {
+			String ACKMessage;
+			if (mode == EXPLORE_MODE) {
+				App.connectionManager.sendMessage("M;;", ConnectionManager.SEND_TO_ROBOT);
+				ACKMessage = App.connectionManager.readMessage();
+				processSensorData(ACKMessage.substring(1));
+			}
 			System.out.println("Moving forward.");
-			//TODO (command Arduino) -> move forward only
+			//TODO (command Arduino) -> move forward
+			App.connectionManager.sendMessage("F;;", ConnectionManager.SEND_TO_ROBOT);
+			ACKMessage = App.connectionManager.readMessage();
+			if (mode == EXPLORE_MODE) {
+				processSensorData(ACKMessage.substring(4));
+			}
+		} else {
+			processSensorData("");
 		}
 		switch (direction) {
 			case HEADING_UP: this.yLocation += 1; break;
@@ -474,8 +509,14 @@ public class Robot {
 	}
 	
 	private void moveBackward() {
-		System.out.println("Moving backward.");
-		//TODO (command Arduino)
+		if (!App.isSimulation) {
+			
+			System.out.println("Moving backward.");
+			//TODO (command Arduino) -> move forward
+			App.connectionManager.sendMessage("B;;", ConnectionManager.SEND_TO_ROBOT);
+			//TODO (wait for ACK then ask for sensor reading)
+			String ACKMessage = App.connectionManager.readMessage();
+		}
 		switch (direction) {
 			case HEADING_UP: this.yLocation -= 1; break;
 			case HEADING_DOWN: this.yLocation += 1; break;
@@ -484,77 +525,102 @@ public class Robot {
 		}
 	}
 	
-	private void checkNearbyObstacle() {
-		checkObstacleInFront();
-		checkObstacleOnSide();
-	}
-	
-	private void checkObstacleInFront() {
-		System.out.println("Checking obstacle in front.");
-		int leftReading = 0;
-		int middleReading = 0;
-		int rightReading = 0;
-		//TODO (command Arduino) -> sense
-		processDataFromFrontSensors(leftReading, middleReading, rightReading);
-	}
-	
-	private void checkObstacleOnSide() {
-		System.out.println("Checking obstacle on the side.");
-		checkObstacleOnLeft();
-		checkObstacleOnRight();
-	}
-	
-	private void checkObstacleOnLeft() {
-		System.out.println("Checking obstacle on the left.");
-		int reading = 0;
-		//TODO (command Arduino) -> sense
-		processDataFromLeftSensor(reading);
-	}
-	
-	private void checkObstacleOnRight() {
-		System.out.println("Checking obstacle on the right.");
-		int reading = 0;
-		//TODO (command Arduino) -> sense
-		processDataFromRightSensor(reading);
+	private void processSensorData(String ACKMessage) {
+		//TODO (decode ACKMessage)
+		int frontLeftReading;
+		int frontMiddleReading;
+		int frontRightReading;
+		int leftSensorReading;
+		int rightSensorReading;
+		//Remove last semicolon
+		if (!App.isSimulation) {
+			ACKMessage = ACKMessage.substring(0, ACKMessage.length()-1);
+			String[] reading = ACKMessage.split(";");
+			for (String s : reading) {
+				System.out.print(s + ", ");
+			}
+			System.out.println();
+			frontLeftReading = Integer.parseInt(reading[0]);
+			frontMiddleReading = Integer.parseInt(reading[1]);
+			frontRightReading = Integer.parseInt(reading[2]);
+			leftSensorReading = Integer.parseInt(reading[3]);
+			rightSensorReading = Integer.parseInt(reading[4]);
+		} else {
+			//Hardcode
+			frontLeftReading = 4;
+			frontMiddleReading = 4;
+			frontRightReading = 4;
+			leftSensorReading = 4;
+			rightSensorReading = 4;
+		}
+		
+		processDataFromFrontSensors(frontLeftReading, frontMiddleReading, frontRightReading);
+		processDataFromLeftSensor(leftSensorReading);
+		processDataFromRightSensor(rightSensorReading);
 	}
 	
 	private void processDataFromFrontSensors(int leftReading, int middleReading, int rightReading) {
 		System.out.println("Processing data from front sensors.");
 		System.out.println("Left reading: " + leftReading + ", middle reading: " + middleReading + ", rightReading: " + rightReading + ".");
-		final int FRONT_SENSOR_DISTANCE_FROM_EDGE = 7;
-		int leftObstacleDistance = ((leftReading - FRONT_SENSOR_DISTANCE_FROM_EDGE + 5) % 10) + 1;
-		int middleObstacleDistance = ((middleReading - FRONT_SENSOR_DISTANCE_FROM_EDGE + 5) % 10) + 1;
-		int rightObstacleDistance = ((rightReading - FRONT_SENSOR_DISTANCE_FROM_EDGE + 5) % 10) + 1;
 		
 		//Cap the distance to be 3 grid (i.e. make sure the sensors are working optimal)
-		leftObstacleDistance = Math.min(leftObstacleDistance, 4);
-		middleObstacleDistance = Math.min(middleObstacleDistance, 4);
-		rightObstacleDistance = Math.min(rightObstacleDistance, 4);
+		int leftObstacleDistance = leftReading + 2;
+		int middleObstacleDistance = middleReading + 2;
+		int rightObstacleDistance = rightReading + 2;
 		
-		//Temp
-		leftObstacleDistance = 4;
-		middleObstacleDistance = 4;
-		rightObstacleDistance = 4;
+		if (App.isSimulation) {
+			switch (direction) {
+				case HEADING_UP:
+					leftObstacleDistance = App.arena.distanceToObstacle(xLocation-1, yLocation+1, HEADING_UP) + 1;
+					middleObstacleDistance = App.arena.distanceToObstacle(xLocation, yLocation+1, HEADING_UP) + 1;
+					rightObstacleDistance = App.arena.distanceToObstacle(xLocation+1, yLocation+1, HEADING_UP) + 1;
+					break;
+				case HEADING_DOWN:
+					leftObstacleDistance = App.arena.distanceToObstacle(xLocation+1, yLocation-1, HEADING_DOWN) + 1;
+					middleObstacleDistance = App.arena.distanceToObstacle(xLocation, yLocation-1, HEADING_DOWN) + 1;
+					rightObstacleDistance = App.arena.distanceToObstacle(xLocation+1, yLocation-1, HEADING_DOWN) + 1;
+					break;
+				case HEADING_RIGHT:
+					leftObstacleDistance = App.arena.distanceToObstacle(xLocation+1, yLocation+1, HEADING_RIGHT) + 1;
+					middleObstacleDistance = App.arena.distanceToObstacle(xLocation+1, yLocation, HEADING_RIGHT) + 1;
+					rightObstacleDistance = App.arena.distanceToObstacle(xLocation+1, yLocation-1, HEADING_RIGHT) + 1;
+					break;
+				case HEADING_LEFT:
+					leftObstacleDistance = App.arena.distanceToObstacle(xLocation-1, yLocation-1, HEADING_LEFT) + 1;
+					middleObstacleDistance = App.arena.distanceToObstacle(xLocation-1, yLocation, HEADING_LEFT) + 1;
+					rightObstacleDistance = App.arena.distanceToObstacle(xLocation-1, yLocation+1, HEADING_LEFT) + 1;
+					break;
+			}
+		}
+		//System.out.println(leftObstacleDistance);
+		//System.out.println(middleObstacleDistance);
+		//System.out.println(rightObstacleDistance);
 		
 		int robotFrontPosition;
 		switch (direction) {
 			case HEADING_UP:
-				robotFrontPosition = yLocation + 1;
+				robotFrontPosition = yLocation + 2;
 				for (int i = 1; i <= 3; i++) {
 					//Front left
-					System.out.println("D" + (xLocation - 1) + " " + (robotFrontPosition + i));
-					arena.setGridAsVisited(xLocation - 1, robotFrontPosition + i);
+					System.out.println(i);
+					if (i <= leftObstacleDistance) {
+						arena.setGridAsVisited(xLocation - 1, robotFrontPosition + i);
+					} 
 					if (i == leftObstacleDistance) {
-						
 						arena.setGridAsObstacle(xLocation - 1, robotFrontPosition + i);
+						System.out.println(xLocation-1 + " " + robotFrontPosition + i);
 					}
 					//Front middle
-					arena.setGridAsVisited(xLocation, robotFrontPosition + i);
+					if (i <= middleObstacleDistance) {
+						arena.setGridAsVisited(xLocation, robotFrontPosition + i);
+					} 
 					if (i == middleObstacleDistance) {
 						arena.setGridAsObstacle(xLocation, robotFrontPosition + i);
 					}
 					//Front right
-					arena.setGridAsVisited(xLocation + 1, robotFrontPosition + i);
+					if (i <= rightObstacleDistance) {
+						arena.setGridAsVisited(xLocation + 1, robotFrontPosition + i);
+					} 
 					if (i == rightObstacleDistance) {
 						arena.setGridAsObstacle(xLocation + 1, robotFrontPosition + i);
 					}
@@ -564,18 +630,24 @@ public class Robot {
 				robotFrontPosition = yLocation - 1;
 				for (int i = 1; i <= 3; i++) {
 					//Front left
-					arena.setGridAsVisited(xLocation + 1, robotFrontPosition - i);
+					if (i <= leftObstacleDistance) {
+						arena.setGridAsVisited(xLocation + 1, robotFrontPosition - i);
+					} 
 					if (i == leftObstacleDistance) {
 						arena.setGridAsObstacle(xLocation + 1, robotFrontPosition - i);
 					}
 					//Middle front
-					arena.setGridAsVisited(xLocation, robotFrontPosition - i);
+					if (i <= middleObstacleDistance) {
+						arena.setGridAsVisited(xLocation, robotFrontPosition - i);
+					}
 					if (i == middleObstacleDistance) {
 						arena.setGridAsObstacle(xLocation, robotFrontPosition - i);
 					}
 					//Front right
-					arena.setGridAsVisited(xLocation - 1, robotFrontPosition - i);
-					if (i == middleObstacleDistance) {
+					if (i <= rightObstacleDistance) {
+						arena.setGridAsVisited(xLocation - 1, robotFrontPosition - i);
+					}
+					if (i == rightObstacleDistance) {
 						arena.setGridAsObstacle(xLocation - 1, robotFrontPosition - i);
 					}
 				}
@@ -584,17 +656,23 @@ public class Robot {
 				robotFrontPosition = xLocation + 1;
 				for (int i = 1; i <= 3; i++) {
 					//Front left
-					arena.setGridAsVisited(robotFrontPosition + i, yLocation + 1);
+					if (i <= leftObstacleDistance) {
+						arena.setGridAsVisited(robotFrontPosition + i, yLocation + 1);
+					}
 					if (i == leftObstacleDistance) {
 						arena.setGridAsObstacle(robotFrontPosition + i, yLocation + 1);
 					}
 					//Middle front
-					arena.setGridAsVisited(robotFrontPosition + i, yLocation);
+					if (i <= middleObstacleDistance) {
+						arena.setGridAsVisited(robotFrontPosition + i, yLocation);
+					}
 					if (i == middleObstacleDistance) {
 						arena.setGridAsObstacle(robotFrontPosition + i, yLocation);
 					}
 					//Front right
-					arena.setGridAsVisited(robotFrontPosition + i, yLocation - 1);
+					if (i <= rightObstacleDistance) {
+						arena.setGridAsVisited(robotFrontPosition + i, yLocation - 1);
+					} 
 					if (i == rightObstacleDistance) {
 						arena.setGridAsObstacle(robotFrontPosition + i, yLocation - 1);
 					}
@@ -604,18 +682,24 @@ public class Robot {
 				robotFrontPosition = xLocation - 1;
 				for (int i = 1; i <= 3; i++) {
 					//Front left
-					arena.setGridAsVisited(robotFrontPosition - i, yLocation - 1);
+					if (i <= leftObstacleDistance) {
+						arena.setGridAsVisited(robotFrontPosition - i, yLocation - 1);
+					}
 					if (i == leftObstacleDistance) {
 						arena.setGridAsObstacle(robotFrontPosition - i, yLocation - 1);
 					}
 					//Middle front
-					arena.setGridAsVisited(robotFrontPosition - i, yLocation);
+					if (i <= middleObstacleDistance) {
+						arena.setGridAsVisited(robotFrontPosition - i, yLocation);
+					}
 					if (i == middleObstacleDistance) {
 						arena.setGridAsObstacle(robotFrontPosition - i, yLocation);
 					}
 					//Front right
-					arena.setGridAsVisited(robotFrontPosition - i, yLocation + 1);
-					if (i == leftObstacleDistance) {
+					if (i <= rightObstacleDistance) {
+						arena.setGridAsVisited(robotFrontPosition - i, yLocation + 1);
+					}
+					if (i == rightObstacleDistance) {
 						arena.setGridAsObstacle(robotFrontPosition - i, yLocation + 1);
 					}
 				}
@@ -626,37 +710,56 @@ public class Robot {
 	private void processDataFromLeftSensor(int reading) {
 		System.out.println("Processing data from left sensors.");
 		System.out.println("Reading: " + reading + ".");
-		final int LEFT_SENSOR_DISTANCE_FROM_EDGE = 7;
-		int obstacleDistance = ((reading - LEFT_SENSOR_DISTANCE_FROM_EDGE + 5) % 10) + 1;
-		
-		//Cap the distance to be 3 grid (i.e. make sure the sensors are working optimal)
-		obstacleDistance = Math.min(obstacleDistance, 4);
-		
-		//Temp
-		obstacleDistance = 4;
+		int obstacleDistance = reading + 2;
+				
+		if (App.isSimulation) {
+			switch (direction) {
+				case HEADING_UP:
+					obstacleDistance = App.arena.distanceToObstacle(xLocation-1, yLocation, HEADING_LEFT) + 1;
+					break;
+				case HEADING_DOWN:
+					obstacleDistance = App.arena.distanceToObstacle(xLocation+1, yLocation, HEADING_RIGHT) + 1;
+					break;
+				case HEADING_RIGHT:
+					obstacleDistance = App.arena.distanceToObstacle(xLocation, yLocation+1, HEADING_UP) + 1;
+					break;
+				case HEADING_LEFT:
+					obstacleDistance = App.arena.distanceToObstacle(xLocation, yLocation-1, HEADING_DOWN) + 1;
+					break;
+			}
+			
+		}
 		
 		for (int i = 1; i <= 3; i++) {
 			switch (direction) {
 				case HEADING_UP:
-					arena.setGridAsVisited(xLocation - 1 - i, yLocation);
+					if (i <= obstacleDistance) {
+						arena.setGridAsVisited(xLocation - 1 - i, yLocation);
+					}
 					if (i == obstacleDistance) {
 						arena.setGridAsObstacle(xLocation - 1 - i, yLocation);
 					}
 					break;
 				case HEADING_DOWN:
-					arena.setGridAsVisited(xLocation + 1 + i, yLocation);
+					if (i <= obstacleDistance) {
+						arena.setGridAsVisited(xLocation + 1 + i, yLocation);
+					}
 					if (i == obstacleDistance) {
 						arena.setGridAsObstacle(xLocation + 1 + i, yLocation);
 					}
 					break;
 				case HEADING_LEFT:
-					arena.setGridAsVisited(xLocation, yLocation - 1 - i);
+					if (i <= obstacleDistance) {
+						arena.setGridAsVisited(xLocation, yLocation - 1 - i);
+					}
 					if (i == obstacleDistance) {
 						arena.setGridAsObstacle(xLocation, yLocation - 1 - i);
 					}
 					break;
 				case HEADING_RIGHT:
-					arena.setGridAsVisited(xLocation, yLocation + 1 + i);
+					if (i <= obstacleDistance) {
+						arena.setGridAsVisited(xLocation, yLocation + 1 + i);
+					}
 					if (i == obstacleDistance) {
 						arena.setGridAsObstacle(xLocation, yLocation + 1 + i);
 					}
@@ -668,37 +771,56 @@ public class Robot {
 	private void processDataFromRightSensor(int reading) {
 		System.out.println("Processing data from right sensors.");
 		System.out.println("Reading: " + reading + ".");
-		final int RIGHT_SENSOR_DISTANCE_FROM_EDGE = 7;
-		int obstacleDistance = ((reading - RIGHT_SENSOR_DISTANCE_FROM_EDGE + 5) % 10) + 1;
+		int obstacleDistance = reading + 2;
 		
-		//Cap the distance to be 3 grid (i.e. make sure the sensors are working optimal)
-		obstacleDistance = Math.min(obstacleDistance, 4);
-		
-		//Temp
-		obstacleDistance = 4;
+		if (App.isSimulation) {
+			switch (direction) {
+				case HEADING_UP:
+					obstacleDistance = App.arena.distanceToObstacle(xLocation+1, yLocation, HEADING_RIGHT) + 1;
+					break;
+				case HEADING_DOWN:
+					obstacleDistance = App.arena.distanceToObstacle(xLocation-1, yLocation, HEADING_LEFT) + 1;
+					break;
+				case HEADING_RIGHT:
+					obstacleDistance = App.arena.distanceToObstacle(xLocation, yLocation-1, HEADING_DOWN) + 1;
+					break;
+				case HEADING_LEFT:
+					obstacleDistance = App.arena.distanceToObstacle(xLocation, yLocation+1, HEADING_UP) + 1;
+					break;
+			}
+			
+		}
 		
 		for (int i = 1; i <= 3; i++) {
 			switch (direction) {
 				case HEADING_UP:
-					arena.setGridAsVisited(xLocation + 1 + i, yLocation);
+					if (i <= obstacleDistance) {
+						arena.setGridAsVisited(xLocation + 1 + i, yLocation);
+					}
 					if (i == obstacleDistance) {
 						arena.setGridAsObstacle(xLocation + 1 + i, yLocation);
 					}
 					break;
 				case HEADING_DOWN:
-					arena.setGridAsVisited(xLocation - 1 - i, yLocation);
+					if (i <= obstacleDistance) {
+						arena.setGridAsVisited(xLocation - 1 - i, yLocation);
+					}
 					if (i == obstacleDistance) {
 						arena.setGridAsObstacle(xLocation - 1 - i, yLocation);
 					}
 					break;
 				case HEADING_LEFT:
-					arena.setGridAsVisited(xLocation, yLocation + 1 + i);
+					if (i <= obstacleDistance) {
+						arena.setGridAsVisited(xLocation, yLocation + 1 + i);
+					}
 					if (i == obstacleDistance) {
 						arena.setGridAsObstacle(xLocation, yLocation + 1 + i);
 					}
 					break;
 				case HEADING_RIGHT:
-					arena.setGridAsVisited(xLocation, yLocation - 1 - i);
+					if (i <= obstacleDistance) {
+						arena.setGridAsVisited(xLocation, yLocation - 1 - i);
+					}
 					if (i == obstacleDistance) {
 						arena.setGridAsObstacle(xLocation, yLocation - 1 - i);
 					}
@@ -713,6 +835,10 @@ public class Robot {
 	
 	public int getY() {
 		return this.yLocation;
+	}
+	
+	public int getDirection() {
+		return this.direction;
 	}
 	
 	private ArrayList getCommandList(Grid origin, Grid destination) {
@@ -748,5 +874,19 @@ public class Robot {
 		//Finally, move forward
 		result.add(Robot.MOVE_FORWARD);
 		return result;
+	}
+	
+	public void reset() {
+		this.xLocation = 1;
+		this.yLocation = 1;
+		this.direction = Robot.HEADING_UP;
+	}
+	
+	public void setMode(int mode) {
+		this.mode = mode;
+	}
+	
+	public int getMode() {
+		return this.mode;
 	}
 }

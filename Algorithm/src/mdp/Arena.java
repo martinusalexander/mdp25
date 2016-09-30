@@ -65,7 +65,6 @@ public class Arena {
 			for (int i = 0; i < ARENA_LENGTH; i++) {
 				if (this.getGrid(i, j).isVisited()) {
 					if (this.getGrid(i, j).isObstacle()) {
-						System.out.println("X" + i + " " + j);
 						dataBinary += "1";
 					} else {
 						dataBinary += "0";
@@ -74,23 +73,56 @@ public class Arena {
 				
 			}
 		}
-		System.out.println("M " + dataBinary);
 		while (dataBinary.length() % 8 != 0)  {
 			dataBinary += "0";
 		}
 		for (int i = 0; i < 8; i++) {
 			dataBinary = "1" + dataBinary;
 		}
-		
-		System.out.println(dataBinary);
 		//Reference: http://stackoverflow.com/a/16918459
 		BigInteger bigInt = new BigInteger(dataBinary, 2);
 		String encodedData = bigInt.toString(16);
 		encodedData = encodedData.substring(2);
-		System.out.println("N " + encodedData);
-		System.out.println("F" + encodedData.length());
 		return encodedData;
 		
+	}
+	
+	public String getArenaData1ForAndroid() {
+		String dataBinary = "";
+		for (int i = 0; i < ARENA_LENGTH; i++) {
+			for (int j = 0; j < ARENA_HEIGHT; j++) {
+				if (this.getGrid(i, j).isObstacle()) {
+					dataBinary += "1";
+				} else {
+					dataBinary += "0";
+				}
+			}
+		}
+		dataBinary = "1000" + dataBinary;
+		//Reference: http://stackoverflow.com/a/16918459
+		BigInteger bigInt = new BigInteger(dataBinary, 2);
+		String encodedData = bigInt.toString(16);
+		encodedData = encodedData.substring(1);
+		return encodedData;
+	}
+	
+	public String getArenaData2ForAndroid() {
+		String dataBinary = "";
+		for (int i = 0; i < ARENA_LENGTH; i++) {
+			for (int j = 0; j < ARENA_HEIGHT; j++) {
+				if (this.getGrid(i, j).isVisited()) {
+					dataBinary += "1";
+				} else {
+					dataBinary += "0";
+				}
+			}
+		}
+		dataBinary = "1000" + dataBinary;
+		//Reference: http://stackoverflow.com/a/16918459
+		BigInteger bigInt = new BigInteger(dataBinary, 2);
+		String encodedData = bigInt.toString(16);
+		encodedData = encodedData.substring(1);
+		return encodedData;
 	}
 	
 	public int getExploredGrid() {
@@ -180,7 +212,7 @@ public class Arena {
 			for (int j = 0; j < ARENA_HEIGHT; j++) {
 				Grid grid = getGrid(i, j);
 				//Grids near wall are not safe
-				if (i == 0 || i == ARENA_LENGTH - 2 || j == 0 || j == ARENA_HEIGHT - 2) {
+				if (i == 0 || i == ARENA_LENGTH - 1 || j == 0 || j == ARENA_HEIGHT - 1) {
 					grid.markAsNotSafe();
 				} else 
 					if (this.isWalkableGrid(i - 1, j - 1) &&

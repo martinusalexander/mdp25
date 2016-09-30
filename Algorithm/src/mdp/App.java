@@ -1,20 +1,13 @@
 package mdp;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.Scanner;
-
-import org.java_websocket.client.WebSocketClient;
-import org.java_websocket.drafts.Draft_10;
-import org.java_websocket.handshake.ServerHandshake;
-
 public class App {
 	
 	protected static Arena arena;
 	protected static Robot robot;
 	protected static ArenaSimulator simulator;
-	protected static WebSocketClient webSocketClient;
 	protected static ConnectionManager connectionManager;
+	protected static Thread listenToAndroidThread;
+	protected static boolean isSimulation = false;
 
 
 	public static void main(String[] args) {
@@ -25,7 +18,9 @@ public class App {
 		generateRobot();
 		//System.out.println("Terminating...");
 		try {
-			openConnectionToRobot();
+			if (!isSimulation) {
+				openConnectionToRobot();
+			}
 		} catch (Exception e) {
 			System.out.println("Cannot establish connection with message: " + e.getMessage());
 		}
@@ -47,81 +42,38 @@ public class App {
 		simulator.setVisible(true);
 	}
 	
-	public static void openConnectionToRobot() throws Exception {
-		/*webSocketClient = new WebSocketClient(new URI("ws://192.168.25.1:5182/"), new Draft_10()) {
-			
-			@Override
-		    public void onMessage(String message) {
-				System.out.println("Received message: " + message);
-		    }
-		
-		    @Override
-		    public void onOpen(ServerHandshake handshake) {
-		        System.out.println("opened connection");
-		    }
-		
-		    @Override
-		    public void onClose(int code, String reason, boolean remote) {
-		        System.out.println( "closed connection" );
-		    }
-		
-		    @Override
-		    public void onError(Exception ex) {
-		        ex.printStackTrace();
-		    }
-		};
-		webSocketClient.connect();
-		while (!webSocketClient.isOpen()) {
-			try {
-			    Thread.sleep(500);                 //1000 milliseconds is one second.
-			    System.out.println(webSocketClient.isOpen());
-			} catch(InterruptedException ex) {
-			    Thread.currentThread().interrupt();
-			} 
-		}
-		//System.out.println("Connection established");
-		Scanner scanner = new Scanner(System.in);
-		String input = scanner.nextLine();
-		do {
-			//System.out.println(webSocketClient.isOpen());
-			webSocketClient.send(input);
-			
-			input = scanner.nextLine();
-		} while (!input.equals("close"));		
-	}*/
-		
-		connectionManager = new ConnectionManager();
-		connectionManager.setConnection(5000);
-		if (connectionManager.isConnected()) {
-			System.out.println("Connection established");
-		}
-		//connectionManager.sendMsg("Jackson", "1", true);
-		connectionManager.sendMsg("F;;", "A", true);	
-		Thread t1 = new Thread(new Runnable() {
+	public static void openConnectionToRobot() throws Exception {		
+		connectionManager = ConnectionManager.getInstance();
+		//connectionManager.sendMessage("M;;",ConnectionManager.SEND_TO_ROBOT);
+		//connectionManager.readMessage();
+		listenToAndroidThread = new Thread(new Runnable() {
 		     public void run() {
-		    	 try {
-		    		 while (connectionManager.isConnected()) {
-		    			 connectionManager.recvMsg();
-		    			 //Thread.sleep(100); 
-		    		 }
-				} /*catch(InterruptedException ex) {
-					Thread.currentThread().interrupt();
-				}*/
-		    	 catch (Exception e) {
-		    		 
-		    	 }
+		    	 //Listening to Android if idle
+		    	 while (true) {
+			    	 if (robot.getMode() == Robot.IDLE_MODE) {
+			    		System.out.println("Listen to Android thread running");
+			 			String message = connectionManager.readMessage();
+			 			if (message.toUpperCase().contains("E;")) {
+			 				robot.command(Robot.EXPLORE);
+			 			} else if (message.toUpperCase().contains("S;")) {
+			 				robot.command(Robot.FASTEST_RUN);
+			 			} else if (message.toUpperCase().contains("R;")) {
+			 				//Temporary, need to fix
+			 				simulator.reset();
+			 			} /*else if (message.toUpperCase().substring(0,1).equals("A")) {
+			 				connectionManager.sendMessage(message.substring(1), ConnectionManager.SEND_TO_ROBOT);
+			 			}*/
+			 			//Prevent inconsistent message receiving process
+			 			try {
+						    Thread.sleep(500);                 
+						} catch(InterruptedException ex) {
+						    Thread.currentThread().interrupt();
+						}
+			    	}
+		 		}
 		     }
 		});  
-		t1.start();
-		/*Scanner sc = new Scanner(System.in);
-		String input = sc.nextLine();
-		while (!input.equals("close")) {
-			connectionManager.sendMsg(input, "A", true);
-			input = sc.nextLine();
-		}*/
-		
-		
-		
+		listenToAndroidThread.start();
 		
 	}
 }

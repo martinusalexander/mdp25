@@ -41,6 +41,14 @@ public class Grid implements Comparable<Grid>, Updatable {
 		return location;
 	}
 	
+	public int getX() {
+		return this.xCoordinate;
+	}
+	
+	public int getY() {
+		return this.yCoordinate;
+	}
+	
 	public int[] getXY() {
 		int[] location = new int[2];
 		location[0] = xCoordinate;
@@ -178,6 +186,13 @@ public class Grid implements Comparable<Grid>, Updatable {
 	
 	public void setDirection(int direction) {
 		this.direction = direction;
+	}
+	
+	public void reset() {
+		isVisitedOnce = false;
+		isVisitedTwice = false;
+		isObstacle = false;
+		isSafe = false;
 	}
 
 

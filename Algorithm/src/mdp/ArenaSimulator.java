@@ -18,14 +18,13 @@ import java.math.BigInteger;
 import java.util.Scanner;
 
 import javax.swing.JButton;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.border.EmptyBorder;
-
-import simulator.FigureMain;
 
 public class ArenaSimulator extends JFrame implements ActionListener {
 	
@@ -39,11 +38,12 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 	public final static Color DEFAULT_COLOR = UIManager.getColor("Button.background");
 	public final static Color VISITED_COLOR = Color.PINK;
 	public final static Color ROBOT_POSITION_COLOR = Color.GREEN;
+	public final static Color ROBOT_DIRECTION_COLOR = Color.BLUE;
 	
 	private JPanel contentPane;
 	private Button[][] button1 = new Button[Arena.ARENA_HEIGHT][Arena.ARENA_LENGTH];
 	private Button[][] button2 = new Button[Arena.ARENA_HEIGHT][Arena.ARENA_LENGTH];
-	private boolean isAdd = true;
+	//private boolean isAdd = true;
 	
 	/*
 	public static void main(String[] args) {
@@ -69,10 +69,15 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 		panel.setLayout(new FlowLayout(FlowLayout.LEFT, 5, 5));
 
 		JButton btImport = new JButton("Import");
+		JFileChooser  fileDialog = new JFileChooser();
 		btImport.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				//select the fixed file
-				getDatas("map.txt");
+				int returnVal = fileDialog.showOpenDialog(App.simulator);
+	            if (returnVal == JFileChooser.APPROVE_OPTION) {
+		            File file = fileDialog.getSelectedFile();
+					getDatas(file.getAbsolutePath());
+	            }
 			}
 		});
 		panel.add(btImport);
@@ -80,16 +85,18 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 		JButton btExport = new JButton("Export");
 		btExport.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//
-				saveDatas();
+				int returnVal = fileDialog.showOpenDialog(App.simulator);
+	            if (returnVal == JFileChooser.APPROVE_OPTION) {
+		            File file = fileDialog.getSelectedFile();
+		            saveDatas(file.getAbsolutePath());
+	            }
 			}
 		});
 		panel.add(btExport);
 
-		JButton btAdd = new JButton("Add Obstacle");
+		/*JButton btAdd = new JButton("Add Obstacle");
 		btAdd.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//
 				isAdd = true;
 			}
 		});
@@ -98,11 +105,10 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 		JButton btRemove = new JButton("Remove Obstacle");
 		btRemove.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				//
 				isAdd = false;
 			}
 		});
-		panel.add(btRemove);
+		panel.add(btRemove);*/
 
 		JButton btExplore = new JButton("Explore");
 		btExplore.addActionListener(new ActionListener() {
@@ -115,7 +121,7 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 		});
 		panel.add(btExplore);
 
-		JButton btFind = new JButton("Find Path");
+		JButton btFind = new JButton("Fastest Run");
 		btFind.addActionListener(new ActionListener() {
 			
 			@Override
@@ -162,7 +168,7 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 				button1[i][j] = new Button(" ");
 				panel_2.add(button1[i][j]);
 				button1[i][j].addActionListener(this);
-				button1[i][j].setActionCommand(i + "a" + j);
+				button1[i][j].setActionCommand("x" + j + "y" + (Arena.ARENA_HEIGHT-1-i));
 			}
 		}
 
@@ -174,8 +180,8 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 			for (int j = 0; j < Arena.ARENA_LENGTH; j++) {
 				button2[i][j] = new Button(" ");
 				panel_3.add(button2[i][j]);
-				button2[i][j].addActionListener(this);
-				button2[i][j].setActionCommand(i + "b" + j);
+				//button2[i][j].addActionListener(this);
+				//button2[i][j].setActionCommand(i + "b" + j);
 			}
 		}
 
@@ -184,14 +190,19 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		String command = e.getActionCommand();
+		int xCoordinate = Integer.parseInt(command.substring(1, command.indexOf("y")));
+		int yCoordinate = Integer.parseInt(command.substring(command.indexOf("y") + 1));
 		Button button = (Button) e.getSource();
-		if (isAdd) {
+		if (button.getBackground() == DEFAULT_COLOR) { 
+			System.out.println(xCoordinate + " " + yCoordinate);
+			App.arena.getGrid(xCoordinate, yCoordinate).markAsObstacle();
 			button.setBackground(OBSTACLE_COLOR);
 		} else {
+			System.out.println(xCoordinate + " " + yCoordinate);
+			App.arena.getGrid(xCoordinate, yCoordinate).markAsNotObstacle();
 			button.setBackground(DEFAULT_COLOR);
 		}
 	}
-
 	/**
 	 * import maze
 	 * 
@@ -220,7 +231,6 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 					if (c.equals("1")) {
 						button1[Arena.ARENA_HEIGHT-1-i][j].setBackground(OBSTACLE_COLOR);
 						App.arena.setGridAsObstacle(j, i);
-						System.out.println("A" + j + " " + i);
 					} else {
 						button1[Arena.ARENA_HEIGHT-1-i][j].setBackground(DEFAULT_COLOR);
 					}
@@ -234,12 +244,12 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 	/**
 	 * export map
 	 */
-	private void saveDatas() {
+	private void saveDatas(String filePath) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("11");
-		for (int i = 19; i >= 0; i--) {
-			for (int j = 0; j <15; j++) {
-				Color color = button1[i][Arena.ARENA_HEIGHT-1-j].getBackground();
+		for (int i = Arena.ARENA_HEIGHT-1; i >= 0; i--) {
+			for (int j = 0; j < Arena.ARENA_LENGTH; j++) {
+				Color color = button1[i][j].getBackground();
 				if (color == OBSTACLE_COLOR) {
 					sb.append("1");
 				} else {
@@ -256,7 +266,7 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 			 * 
 			 */
 			BufferedWriter writer = new BufferedWriter(
-					new FileWriter("map.txt"));
+					new FileWriter(filePath));
 			writer.write(mapHex);
 			writer.flush();
 			writer.close();
@@ -269,27 +279,34 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 	/**
 	 * 
 	 */
-	private void reset() {
-		for (int i = 0; i < Arena.ARENA_LENGTH; i++) {
-			for (int j = 0; j < Arena.ARENA_HEIGHT; j++) {
-				button1[i][Arena.ARENA_HEIGHT-1-j].setBackground(DEFAULT_COLOR);
+	public void reset() {
+		App.robot.reset();
+		for (int i = 0; i < Arena.ARENA_HEIGHT; i++) {
+			for (int j = 0; j < Arena.ARENA_LENGTH; j++) {
+				button1[i][j].setBackground(DEFAULT_COLOR);
+				button2[i][j].setBackground(DEFAULT_COLOR);
+				App.arena.getGrid(j, i).reset();
 			}
 		}
+		
 	}
 	
 	protected void updateMap(String data1, String data2) {
-		System.out.println(data1);
-		System.out.println(data2);
-		BigInteger num = new BigInteger(data1, 16);
-		String mapData1 = num.toString(2);
-		mapData1 = mapData1.substring(2, 302);
-		System.out.println("L" + data2);
-		int data2Length = data2.length();
-		data2Length *= 4;
-		num = new BigInteger(data2, 16);
-		String mapData2 = num.toString(2);
-		while (mapData2.length() < data2Length) {
-			mapData2 = "0" + mapData2;
+		String mapData1;
+		String mapData2;
+		try {
+			BigInteger num = new BigInteger(data1, 16);
+			mapData1 = num.toString(2);
+			mapData1 = mapData1.substring(2, 302);
+			int data2Length = data2.length();
+			data2Length *= 4;
+			num = new BigInteger(data2, 16);
+			mapData2 = num.toString(2);
+			while (mapData2.length() < data2Length) {
+				mapData2 = "0" + mapData2;
+			}
+		} catch (NumberFormatException e) {
+			return;
 		}
 		
 		int counter = 0;
@@ -305,10 +322,6 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 						counter++;
 						String obstacleStr = String.valueOf(obstacleChar);
 						if (obstacleStr.equals("1")) {
-							System.out.println("Z " + counter);
-							System.out.println("O " + (Arena.ARENA_HEIGHT-1-i) + " " + j);
-							//Scanner sc = new Scanner(System.in);
-							//sc.nextLine();
 							button2[Arena.ARENA_HEIGHT-1-j][i].setBackground(OBSTACLE_COLOR);
 						}
 					} catch (StringIndexOutOfBoundsException e) {
@@ -321,6 +334,19 @@ public class ArenaSimulator extends JFrame implements ActionListener {
 		}
 		//Mark robot location
 		button2[Arena.ARENA_HEIGHT-1-App.robot.getY()][App.robot.getX()].setBackground(ROBOT_POSITION_COLOR);
-		
+		switch (App.robot.getDirection()) {
+			case Robot.HEADING_UP:
+				button2[Arena.ARENA_HEIGHT-2-App.robot.getY()][App.robot.getX()].setBackground(ROBOT_DIRECTION_COLOR);
+				break;
+			case Robot.HEADING_DOWN:
+				button2[Arena.ARENA_HEIGHT-App.robot.getY()][App.robot.getX()].setBackground(ROBOT_DIRECTION_COLOR);
+				break;
+			case Robot.HEADING_RIGHT:
+				button2[Arena.ARENA_HEIGHT-1-App.robot.getY()][App.robot.getX()+1].setBackground(ROBOT_DIRECTION_COLOR);
+				break;
+			case Robot.HEADING_LEFT:
+				button2[Arena.ARENA_HEIGHT-1-App.robot.getY()][App.robot.getX()-1].setBackground(ROBOT_DIRECTION_COLOR);
+				break;
+		}
 	}
 }
