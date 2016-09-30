@@ -564,9 +564,9 @@ public class Robot {
 		System.out.println("Left reading: " + leftReading + ", middle reading: " + middleReading + ", rightReading: " + rightReading + ".");
 		
 		//Cap the distance to be 3 grid (i.e. make sure the sensors are working optimal)
-		int leftObstacleDistance = leftReading + 2;
-		int middleObstacleDistance = middleReading + 2;
-		int rightObstacleDistance = rightReading + 2;
+		int leftObstacleDistance = leftReading + 1;
+		int middleObstacleDistance = middleReading + 1;
+		int rightObstacleDistance = rightReading + 1;
 		
 		if (App.isSimulation) {
 			switch (direction) {
@@ -599,7 +599,7 @@ public class Robot {
 		int robotFrontPosition;
 		switch (direction) {
 			case HEADING_UP:
-				robotFrontPosition = yLocation + 2;
+				robotFrontPosition = yLocation + 1;
 				for (int i = 1; i <= 3; i++) {
 					//Front left
 					System.out.println(i);
@@ -710,7 +710,7 @@ public class Robot {
 	private void processDataFromLeftSensor(int reading) {
 		System.out.println("Processing data from left sensors.");
 		System.out.println("Reading: " + reading + ".");
-		int obstacleDistance = reading + 2;
+		int obstacleDistance = reading + 1;
 				
 		if (App.isSimulation) {
 			switch (direction) {
@@ -771,7 +771,7 @@ public class Robot {
 	private void processDataFromRightSensor(int reading) {
 		System.out.println("Processing data from right sensors.");
 		System.out.println("Reading: " + reading + ".");
-		int obstacleDistance = reading + 2;
+		int obstacleDistance = reading + 1;
 		
 		if (App.isSimulation) {
 			switch (direction) {
