@@ -99,19 +99,18 @@ public class Robot {
 				App.arena.setGridAsVisited(i, j);
 			}
 		}
+		String ACKMessage;
+		if (!App.isSimulation) {
+			App.connectionManager.sendMessage("M;;", ConnectionManager.SEND_TO_ROBOT);
+			ACKMessage = App.connectionManager.readMessage();
+			processSensorData(ACKMessage.substring(1));
+		} else {
+			processSensorData("");
+		}
 		do  {
 			counter++;
 			System.out.println("Exploring step: " + counter);
-			
-			String ACKMessage;
-			if (!App.isSimulation) {
-				App.connectionManager.sendMessage("M;;", ConnectionManager.SEND_TO_ROBOT);
-				ACKMessage = App.connectionManager.readMessage();
-				processSensorData(ACKMessage.substring(1));
-			} else {
-				processSensorData("");
-			}
-			
+				
 			//Decide appropriate movement
 			int nextCommand = getAppropriateExplorationMovement();
 			
@@ -200,7 +199,7 @@ public class Robot {
 			    Thread.currentThread().interrupt();
 			}*/
 			jsonObject = new JSONObject();
-			jsonObject.put("obstacle", arenaData1ForAndroid);
+			jsonObject.put("sensor", arenaData2ForAndroid);
 			App.connectionManager.sendMessage(jsonObject.toString(), ConnectionManager.SEND_TO_ANDROID);
 			/*try {
 			    Thread.sleep(25);                 //1000 milliseconds is one second.
@@ -208,7 +207,7 @@ public class Robot {
 			    Thread.currentThread().interrupt();
 			}*/
 			jsonObject = new JSONObject();
-			jsonObject.put("sensor", arenaData2ForAndroid);
+			jsonObject.put("obstacle", arenaData1ForAndroid);
 			App.connectionManager.sendMessage(jsonObject.toString(), ConnectionManager.SEND_TO_ANDROID);
 			/*try {
 			    Thread.sleep(25);                 //1000 milliseconds is one second.
@@ -485,11 +484,11 @@ public class Robot {
 	private void moveForward() {
 		if (!App.isSimulation) {
 			String ACKMessage;
-			if (mode == EXPLORE_MODE) {
+			/*if (mode == EXPLORE_MODE) {
 				App.connectionManager.sendMessage("M;;", ConnectionManager.SEND_TO_ROBOT);
 				ACKMessage = App.connectionManager.readMessage();
 				processSensorData(ACKMessage.substring(1));
-			}
+			}*/
 			System.out.println("Moving forward.");
 			//TODO (command Arduino) -> move forward
 			App.connectionManager.sendMessage("F;;", ConnectionManager.SEND_TO_ROBOT);
@@ -564,9 +563,9 @@ public class Robot {
 		System.out.println("Left reading: " + leftReading + ", middle reading: " + middleReading + ", rightReading: " + rightReading + ".");
 		
 		//Cap the distance to be 3 grid (i.e. make sure the sensors are working optimal)
-		int leftObstacleDistance = leftReading + 1;
-		int middleObstacleDistance = middleReading + 1;
-		int rightObstacleDistance = rightReading + 1;
+		int leftObstacleDistance = leftReading + 2;
+		int middleObstacleDistance = middleReading + 2;
+		int rightObstacleDistance = rightReading + 2;
 		
 		if (App.isSimulation) {
 			switch (direction) {
@@ -623,8 +622,8 @@ public class Robot {
 					} 
 					if (i == rightObstacleDistance) {
 						arena.setGridAsObstacle(xLocation + 1, robotFrontPosition + i);
+						}
 					}
-				}
 				break;
 			case HEADING_DOWN:
 				robotFrontPosition = yLocation - 1;
@@ -710,7 +709,7 @@ public class Robot {
 	private void processDataFromLeftSensor(int reading) {
 		System.out.println("Processing data from left sensors.");
 		System.out.println("Reading: " + reading + ".");
-		int obstacleDistance = reading + 1;
+		int obstacleDistance = reading + 2;
 				
 		if (App.isSimulation) {
 			switch (direction) {
@@ -771,7 +770,7 @@ public class Robot {
 	private void processDataFromRightSensor(int reading) {
 		System.out.println("Processing data from right sensors.");
 		System.out.println("Reading: " + reading + ".");
-		int obstacleDistance = reading + 1;
+		int obstacleDistance = reading + 2;
 		
 		if (App.isSimulation) {
 			switch (direction) {

@@ -44,7 +44,9 @@ public class App {
 	
 	public static void openConnectionToRobot() throws Exception {		
 		connectionManager = ConnectionManager.getInstance();
-		//connectionManager.sendMessage("M;;",ConnectionManager.SEND_TO_ROBOT);
+		connectionManager.sendMessage("{\"robotPosition\":\"[1,1,180]\"}", ConnectionManager.SEND_TO_ANDROID);
+		connectionManager.sendMessage("{\"sensor\":\"fc000fe000fc000f80007800038000100000000000000000000000000000000000000000000\"}", ConnectionManager.SEND_TO_ANDROID);
+		connectionManager.sendMessage("{\"obstacle\":\"040000400004000000004000000000000000000000000000000000000000000000000000000\"}",ConnectionManager.SEND_TO_ANDROID);
 		//connectionManager.readMessage();
 		listenToAndroidThread = new Thread(new Runnable() {
 		     public void run() {
