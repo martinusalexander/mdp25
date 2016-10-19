@@ -5,6 +5,14 @@
 DualVNH5019MotorShield md;
 
 //DEFINING CONSTANT
+#define motor_encoder_39 13 //right
+#define motor_encoder_22 5 //left
+#define sensor_L_pin A1
+#define sensor_C_pin A2
+#define sensor_R_pin A3
+#define sensor_SL_pin A4
+#define sensor_SR_pin A5
+/*
 #define motor_encoder_39 3 //right
 #define motor_encoder_22 5 //left
 #define sensor_L_pin 2
@@ -12,6 +20,7 @@ DualVNH5019MotorShield md;
 #define sensor_R_pin 5
 #define sensor_SL_pin 3
 #define sensor_SR_pin 4
+*/
 //#define sensor_Long1_pin 5
 
 #define SENSOR_OFFSET 4
@@ -67,6 +76,8 @@ void loop() {
 //  botCalibration();
 //  moveForwardMM(600);
 //  rotateRight(9000);
+//  rotateLeft(9000);
+    alignAngle_without_alignDis();
 //  }
 
   brake_SpeedR = 388;
@@ -104,19 +115,19 @@ void loop() {
   /*----------------------------------------------
   Command Legends:
   ----------------
-  W ---> Move Forward
+  //W ---> Move Forward
   F ---> Move Forward in MM (used in Week 12)
-  A ---> Rotate Left
-  D ---> Rotate Right
+  L ---> Rotate Left
+  R ---> Rotate Right
   B ---> Break
-  S ---> Read Sensor Values
+  M ---> Read Sensor Values (Measurement)
   C ---> Calibrate Bot
-  R ---> Resend reply string
+  Q ---> Resend reply string
   T ---> Avoiding Obstacle In A Straight Line
  ----------------------------------------------*/
  
   switch ( command ) {
-    case 'W':
+   /* case 'W':
       {
         if (arg == 0) moveForward(1);
         else moveForward(arg);
@@ -127,37 +138,34 @@ void loop() {
         Serial.println(sendStr);
         break;
       }
-
+  */
     case 'F':
-      {
-        if (arg == 0) moveForwardMM(100);
-        else moveForwardMM(arg);
-        sendStr1 = "pF";
-        sendStr2 = arg;
-        sendStr3 = "done";
-        sendStr = sendStr1 + sendStr2 + sendStr3;
+      {   
+        if (arg == 0) arg = 1;
+        moveForward(arg);
+        sendStr1 = "F1;";
+        sendStr2 = getSensorReading();
+        sendStr = sendStr1 + sendStr2;
         Serial.println(sendStr);
         break;
       }
-    case 'A':
+    case 'L':
       {
-        if (arg == 0) arg = 9000;       
+        if (arg == 0) arg = 9000;     
+        sendStr1 = "L1;";
+        sendStr2 = getSensorReading();  
         rotateLeft(arg);
-        sendStr1 = "pA";
-        sendStr2 = arg;
-        sendStr3 = "done";
-        sendStr = sendStr1 + sendStr2 + sendStr3;
+        sendStr = sendStr1 + sendStr2;
         Serial.println(sendStr);
         break;
       }
-    case 'D':
+    case 'R':
       {
-        if (arg == 0) arg = 9000;
+        if (arg == 0) arg = 9000;     
+        sendStr1 = "R1;";
+        sendStr2 = getSensorReading(); 
         rotateRight(arg);
-        sendStr1 = "pD";
-        sendStr2 = arg;
-        sendStr3 = "done";
-        sendStr = sendStr1 + sendStr2 + sendStr3;
+        sendStr = sendStr1 + sendStr2;
         Serial.println(sendStr);
         break;
       }
@@ -167,7 +175,7 @@ void loop() {
       Serial.println("Braked");
       break;
     }
-    case 'S':
+    case 'M':
       {
         readSensors();
         break;
@@ -175,14 +183,12 @@ void loop() {
     case 'C':
       {
         botCalibration();
-        sendStr1 = "pC";
-        sendStr3 = "done";
-        sendStr = sendStr1 + sendStr3;
+        sendStr = "C1;";
         Serial.println(sendStr);
         break;
       }
 
-      case 'R':
+      case 'Q':
       {
         Serial.println(sendStr);
         break;
@@ -210,24 +216,24 @@ double tuneWithPID()
   double drive, last_tick;
   double kp, ki, kd, p, i, d;
 
-  kp = 50;
+  kp = 40;
   ki = 0.1;
   kd = 0.01;
 
-  error = encoder_R_value - encoder_L_value;
+  error = encoder_L_value - encoder_R_value;
   integral += error;
 
   p = error * kp;
   i = integral * ki;
-  d = (last_tick - encoder_R_value) * kd;
+  d = (last_tick - encoder_L_value) * kd;
   drive = p + i + d;
 
-  last_tick = encoder_R_value;
+  last_tick = encoder_L_value;
   
   return drive;
 }
 
-void moveForwardMM(int mm) {        //temporary treat gridNum as disctance in cm 
+void moveForward(int gridNum) {        //temporary treat gridNum as disctance in cm 
 
   encoder_R_value = 0;
   encoder_L_value = 0;
@@ -235,15 +241,15 @@ void moveForwardMM(int mm) {        //temporary treat gridNum as disctance in cm
   error = 0;
   integral = 0;
 
-  float cmDis = mm/10;
+  float cmDis = gridNum * 10;
 
   if (cmDis<= 10) {
-    target_Tick = cmDis * 54.5
+    target_Tick = cmDis * 54.5 //54.5 // 49.3 //
     ; //55.4
     brake_SpeedR = 377;   //381
   }
-  else if(cmDis<=20) target_Tick = cmDis * 56.6;    //done
-  else if(cmDis<=30) target_Tick = cmDis * 58;  //done
+  else if(cmDis<=20) target_Tick = cmDis * 56.6; //52.0;    //done
+  else if(cmDis<=30) target_Tick = cmDis * 58;   //55.5;  //done
   else if(cmDis<=40) target_Tick = cmDis * 58.5;  //done
   else if(cmDis<=50) target_Tick = cmDis * 58.7;  //done
   else if(cmDis<=60) target_Tick = cmDis * 58.9;  //done
@@ -260,29 +266,30 @@ void moveForwardMM(int mm) {        //temporary treat gridNum as disctance in cm
   else if(cmDis<=170) target_Tick = cmDis * 58.9;  
   else target_Tick = cmDis * 58.9;
 
-    while (encoder_R_value < 200 )
+    while (encoder_L_value < 200 )
   {
     output = tuneWithPID(); 
-    md.setSpeeds(200 + output, 200 - output);
+    md.setSpeeds(300 + output, 300 - output);
   }
 
-  while (encoder_R_value < target_Tick - 200)
+  while (encoder_L_value < target_Tick - 200)
   {
     output = tuneWithPID();
-    md.setSpeeds(str8_SpeedL + output, str8_SpeedR - output);
+    md.setSpeeds(str8_SpeedR + output, str8_SpeedL - output);
   }
   
-  while (encoder_R_value < target_Tick)
+  while (encoder_L_value < target_Tick)
   {
     output = tuneWithPID();
     md.setSpeeds(200 + output, 200 - output);
   }
-  md.setBrakes(brake_SpeedL, brake_SpeedR);
+  md.setBrakes(brake_SpeedR, brake_SpeedL 
+  );
 
   delay(80);
   md.setBrakes(0, 0);
 }
-
+/*
 void moveForward(int gridNum) {       
   
   encoder_R_value = 0;
@@ -350,7 +357,7 @@ void moveForward(int gridNum) {
   delay(80);
   md.setBrakes(0, 0);
 }
-
+*/
 void moveBackward(int gridNum) {   
 
   encoder_R_value = 0;
@@ -363,25 +370,25 @@ void moveBackward(int gridNum) {
   
   target_Tick = cmDis * 60 - 127;
 
-  while (encoder_R_value < 150 )
+  while (encoder_L_value < 150 )
     {
       output = tuneWithPID();
       md.setSpeeds(-(100 + output), -(100 - output));
     }
   
-    while (encoder_R_value < 350 )
+    while (encoder_L_value < 350 )
   {
     output = tuneWithPID();
     md.setSpeeds(-(200 + output), -(200 - output));
   }
 
- while (encoder_R_value < 600 )
+ while (encoder_L_value < 600 )
   {
     output = tuneWithPID();
     md.setSpeeds(-(250 + output), -(250 - output));
   }
 
-  while (encoder_R_value < target_Tick )
+  while (encoder_L_value < target_Tick )
   {
     output = tuneWithPID();
     md.setSpeeds(-(str8_SpeedL + output), -(str8_SpeedR - output));
@@ -390,7 +397,7 @@ void moveBackward(int gridNum) {
   md.setBrakes(400, 400);
 }
 
-int rotateRight(int angle) {
+int rotateLeft(int angle) {
 
   encoder_R_value = 0;
   encoder_L_value = 0;
@@ -413,19 +420,19 @@ int rotateRight(int angle) {
   else if (angle <= 1080) target_Tick = angle * 9.06;
   else target_Tick = angle * 9.0;
 
-  while (encoder_R_value < target_Tick*0.2 )
+  while (encoder_L_value < target_Tick*0.2 )
   {
     output = tuneWithPID();
     md.setSpeeds(150 + output, -(150 - output));
   }
 
-  while (encoder_R_value < target_Tick*0.7) 
+  while (encoder_L_value < target_Tick*0.7) 
   {
     output = tuneWithPID();
-    md.setSpeeds(rotate_SpeedL + output, -(rotate_SpeedR - output));
+    md.setSpeeds(rotate_SpeedR + output, -(rotate_SpeedL - output));
   }
   
-  while (encoder_R_value < target_Tick) 
+  while (encoder_L_value < target_Tick) 
   {
     output = tuneWithPID();
     md.setSpeeds(150 + output, -(150 - output));
@@ -436,7 +443,7 @@ int rotateRight(int angle) {
   md.setBrakes(0, 0);
 }
 
-int rotateLeft(int angle) {
+int rotateRight(int angle) {
   
   encoder_R_value = 0;
   encoder_L_value = 0;
@@ -460,18 +467,18 @@ int rotateLeft(int angle) {
   else target_Tick = angle * 9.0;
   
 
-  while (encoder_R_value < target_Tick*0.2  )
+  while (encoder_L_value < target_Tick*0.2  )
   {
     output = tuneWithPID();
     md.setSpeeds(-(150 + output), 150 - output);
   }
   
-  while (encoder_R_value < target_Tick*0.7) {
+  while (encoder_L_value < target_Tick*0.7) {
     output = tuneWithPID();
     md.setSpeeds(-(rotate_SpeedL + output), rotate_SpeedR - output);
   }
 
-  while (encoder_R_value < target_Tick) {
+  while (encoder_L_value < target_Tick) {
     output = tuneWithPID();
     md.setSpeeds(-(150 + output), 150 - output);
   }
@@ -491,7 +498,7 @@ void moveForward_without_ramp(double cmDis) {        //temporary treat gridNum a
 //  target_Tick = cmDis * 60 - 127;
   target_Tick = cmDis * 55.2;
 
-  while (encoder_R_value < target_Tick )
+  while (encoder_L_value < target_Tick )
   {
     output = tuneWithPID();
 //    delay(3);
@@ -501,7 +508,7 @@ void moveForward_without_ramp(double cmDis) {        //temporary treat gridNum a
   md.setBrakes(400, 385);
   
   delay(10);
-  md.setBrakes(0, 0);
+  //md.setBrakes(0, 0);
 }
 
 void moveBackward_without_ramp(double cmDis) {        //temporary treat gridNum as disctance in cm 
@@ -515,7 +522,7 @@ void moveBackward_without_ramp(double cmDis) {        //temporary treat gridNum 
 //  target_Tick = cmDis * 60 - 127;
   target_Tick = cmDis * 55.2;
 
-  while (encoder_R_value < target_Tick )
+  while (encoder_L_value < target_Tick )
   {
     output = tuneWithPID();
 //    delay(3);
@@ -528,7 +535,7 @@ void moveBackward_without_ramp(double cmDis) {        //temporary treat gridNum 
 
 }
 
-int rotateRight_without_ramp(double angle) {
+int rotateLeft_without_ramp(double angle) {
 
   encoder_R_value = 0;
   encoder_L_value = 0;
@@ -544,7 +551,7 @@ int rotateRight_without_ramp(double angle) {
   else if (angle <= 1080) target_Tick = angle * 9.06;
   else target_Tick = angle * 9.0;
   
-  while (encoder_R_value < target_Tick ) 
+  while (encoder_L_value < target_Tick ) 
   {
     output = tuneWithPID();
     md.setSpeeds(100 + output, -(100 - output));
@@ -554,7 +561,7 @@ int rotateRight_without_ramp(double angle) {
   md.setBrakes(0, 0);
 }
 
-int rotateLeft_without_ramp(double angle) {
+int rotateRight_without_ramp(double angle) {
 
   encoder_R_value = 0;
   encoder_L_value = 0;
@@ -566,16 +573,20 @@ int rotateLeft_without_ramp(double angle) {
   //360 - 8.96
   
   target_Tick = angle * 8.78;
+  //target_Tick = angle * 8.6;
 
-  while (encoder_R_value < target_Tick ) {
+  while (encoder_L_value < target_Tick) 
+  {
+    //HACK: I don't know what's the problem. But this way fixed it.
+    //But we can't do this because the String will be sent to the rPi.
+    Serial.println("A");
     output = tuneWithPID();
     md.setSpeeds(-(100 + output), 100 - output);
   }
   md.setBrakes(400,400);
   delay(10);
   md.setBrakes(0, 0);
-//  Serial.println(encoder_R_value);
-//  Serial.println(encoder_L_value);
+
 }
 
 void readSensors()
@@ -594,19 +605,39 @@ void readSensors()
 //  Serial.print(":");
 //  Serial.print("\n");
   
-  Serial.print("p");
+//Serial.print("p");
+  Serial.print("M");
   Serial.print(gridsAwayL(getMedianDistance(sensor_L) + SENSOR_OFFSET));
-  Serial.print(":");
+  Serial.print(";");
   Serial.print(gridsAwayC(getMedianDistance(sensor_C) + SENSOR_OFFSET));
-  Serial.print(":");
+  Serial.print(";");
   Serial.print(gridsAwayR(getMedianDistance(sensor_R) + SENSOR_OFFSET));
-  Serial.print(":");
+  Serial.print(";");
   Serial.print(gridsAwaySL(getMedianDistance(sensor_SL) + SENSOR_OFFSET));
-  Serial.print(":");
+  Serial.print(";");
   Serial.print(gridsAwaySR(getMedianDistance(sensor_SR) + SENSOR_OFFSET));
+  Serial.print(";");
   Serial.print("\n");
 
 }
+
+String getSensorReading()
+{
+  String result = "M";
+  result += gridsAwayL(getMedianDistance(sensor_L) + SENSOR_OFFSET);
+  result += ";";
+  result += gridsAwayC(getMedianDistance(sensor_C) + SENSOR_OFFSET);
+  result += ";";
+  result += gridsAwayR(getMedianDistance(sensor_R) + SENSOR_OFFSET);
+  result += ";";
+  result += gridsAwaySL(getMedianDistance(sensor_SL) + SENSOR_OFFSET);
+  result += ";";
+  result += gridsAwaySR(getMedianDistance(sensor_SR) + SENSOR_OFFSET);
+  result += ";";
+  return result;
+}
+
+
 
 int calDistance(SharpIR sensor)
 {
@@ -625,42 +656,42 @@ int getMedianDistance(SharpIR sensor)
 
 int gridsAwayL(int dis)
 {
-  if (abs(dis) < 17) return 1;
-  else if (abs(dis) < 27) return 2;
-  else if (abs(dis) < 39) return 3;
-  else return -1;
+  if (abs(dis) < 17) return 0;
+  else if (abs(dis) < 27) return 1;
+  else if (abs(dis) < 39) return 2;
+  else return 3;
 }
 
 int gridsAwayC(int dis)
 {
-  if (abs(dis) < 17) return 1;
-  else if (abs(dis) < 27) return 2;
-  else if (abs(dis) < 39) return 3;    //44
-  else return -1;
+  if (abs(dis) < 17) return 0;
+  else if (abs(dis) < 27) return 1;
+  else if (abs(dis) < 39) return 2;    //44
+  else return 3;
 }
 
 int gridsAwayR(int dis)
 {
-  if (abs(dis) < 17) return 1;
-  else if (abs(dis) < 27) return 2;
-  else if (abs(dis) < 39) return 3;
-  else return -1;
+  if (abs(dis) < 17) return 0;
+  else if (abs(dis) < 27) return 1;
+  else if (abs(dis) < 39) return 2;
+  else return 3;
 }
 
 int gridsAwaySL(int dis)
 {
-  if (abs(dis) < 16) return 1;
-  else if (abs(dis) < 25) return 2;   //31
-  else if (abs(dis) < 40) return 3;
-  else return -1;
+  if (abs(dis) < 16) return 0;
+  else if (abs(dis) < 25) return 1;   //31
+  else if (abs(dis) < 40) return 2;
+  else return 3;
 }
 
 int gridsAwaySR(int dis)
 {
-  if (abs(dis) < 18) return 1;
-  else if (abs(dis) < 27) return 2;     //or 36
-  else if (abs(dis) < 40) return 3;     //54
-  else return -1;
+  if (abs(dis) < 18) return 0;
+  else if (abs(dis) < 27) return 1;     //or 36
+  else if (abs(dis) < 40) return 2;     //54
+  else return 3;
 }
 
 void botCalibration()
@@ -723,11 +754,13 @@ void alignAngle_without_alignDis()
     sensor_L_dis = getMedianDistance(sensor_L) + SENSOR_OFFSET;
     sensor_R_dis = getMedianDistance(sensor_R) + SENSOR_OFFSET;
     int error = sensor_L_dis - sensor_R_dis;
-
+    
     if (error >= 1){
+      Serial.println("Right");
       rotateRight_without_ramp(0.5);
     }
     else if (error <= -1){
+      Serial.println("Left");
       rotateLeft_without_ramp(0.5);
     }
     else break;
@@ -737,7 +770,8 @@ void alignAngle_without_alignDis()
 void alignDistance(){
   while(1){
     int sensor_R_dis = getMedianDistance(sensor_R) + SENSOR_OFFSET +1;
-    if (sensor_R_dis > dis_from_wall) moveForward_without_ramp(0.8);//md.setSpeeds(80,80);
+    md.setSpeeds(80,80);
+    if (sensor_R_dis > dis_from_wall) moveForward_without_ramp(0.8);
     else if (sensor_R_dis < dis_from_wall) moveBackward_without_ramp(0.8);
     else break;
   }
@@ -745,7 +779,8 @@ void alignDistance(){
 
   while(1){
     int sensor_L_dis = getMedianDistance(sensor_L) + SENSOR_OFFSET;
-    if (sensor_L_dis > dis_from_wall) moveForward_without_ramp(0.8);//md.setSpeeds(80,80);
+    md.setSpeeds(80,80);
+    if (sensor_L_dis > dis_from_wall) moveForward_without_ramp(0.8);
     else if (sensor_L_dis < dis_from_wall) moveBackward_without_ramp(0.8);
     else break;
   }
