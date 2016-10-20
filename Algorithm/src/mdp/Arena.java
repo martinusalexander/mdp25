@@ -163,7 +163,9 @@ public class Arena {
 	
 	public boolean isVisitedGrid(int x, int y) {
 		Grid grid = getGrid(x, y);
-		if (grid.isVisitedOnce() || grid.isVisitedTwice()) {
+		if (grid == null) {
+			return true;
+		} else if (grid.isVisitedOnce() || grid.isVisitedTwice()) {
 			return true;
 		} else {
 			return false;
@@ -193,6 +195,13 @@ public class Arena {
 		Grid grid = getGrid(x, y);
 		if (grid != null) {
 			grid.markAsObstacle();
+		}
+	}
+	
+	public void setGridAsNotObstacle(int x, int y) {
+		Grid grid = getGrid(x, y);
+		if (grid != null) {
+			grid.markAsNotObstacle();
 		}
 	}
 	

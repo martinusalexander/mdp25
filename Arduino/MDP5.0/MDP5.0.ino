@@ -58,13 +58,21 @@ void setup() {
   pinMode(motor_encoder_39, INPUT);
 
   //initiating speed 
+  
   str8_SpeedL = 400;    //250
   str8_SpeedR = 400;    //250
   rotate_SpeedL = 350;    //150
   rotate_SpeedR = 350;    //150
   brake_SpeedL = 400;    //250
-  brake_SpeedR = 388;
-  
+  brake_SpeedR = 400;     //388
+   /*
+  str8_SpeedL = 200;    //250
+  str8_SpeedR = 200;    //250
+  rotate_SpeedL = 200;    //150
+  rotate_SpeedR = 200;    //150
+  brake_SpeedL = 200;    //250
+  brake_SpeedR = 190;
+  */
   PCintPort::attachInterrupt(motor_encoder_39, RightEncoderInc, HIGH);
   PCintPort::attachInterrupt(motor_encoder_22, LeftEncoderInc, HIGH);
 }
@@ -77,10 +85,10 @@ void loop() {
 //  moveForwardMM(600);
 //  rotateRight(9000);
 //  rotateLeft(9000);
-    alignAngle_without_alignDis();
+//  alignAngle_without_alignDis();
 //  }
 
-  brake_SpeedR = 388;
+  //brake_SpeedR = 388;
   
   char command_buffer[10];
   int i = 0, arg = 0;
@@ -93,7 +101,7 @@ void loop() {
         readChar = Serial.read();
         command_buffer[i] = readChar;
         i++;
-        if (readChar == '|'){
+        if (readChar == ';'){
           i = 1;
           break;
         }
@@ -105,7 +113,7 @@ void loop() {
   char command = command_buffer[0];
 
   //Converts subsequent characters in the array into an integer
-  while (command_buffer[i] != '|') {
+  while (command_buffer[i] != ';') {
     arg *= 10;
     arg = arg + (command_buffer[i] - 48);
     i++;
@@ -151,20 +159,20 @@ void loop() {
       }
     case 'L':
       {
-        if (arg == 0) arg = 9000;     
+        if (arg == 0) arg = 9000;   
+        rotateLeft(arg);  
         sendStr1 = "L1;";
         sendStr2 = getSensorReading();  
-        rotateLeft(arg);
         sendStr = sendStr1 + sendStr2;
         Serial.println(sendStr);
         break;
       }
     case 'R':
       {
-        if (arg == 0) arg = 9000;     
+        if (arg == 0) arg = 9000;  
+        rotateRight(arg);   
         sendStr1 = "R1;";
         sendStr2 = getSensorReading(); 
-        rotateRight(arg);
         sendStr = sendStr1 + sendStr2;
         Serial.println(sendStr);
         break;
@@ -244,7 +252,7 @@ void moveForward(int gridNum) {        //temporary treat gridNum as disctance in
   float cmDis = gridNum * 10;
 
   if (cmDis<= 10) {
-    target_Tick = cmDis * 54.5 //54.5 // 49.3 //
+    target_Tick = cmDis * 54.8 //54.5 // 49.3 //
     ; //55.4
     brake_SpeedR = 377;   //381
   }
@@ -270,6 +278,7 @@ void moveForward(int gridNum) {        //temporary treat gridNum as disctance in
   {
     output = tuneWithPID(); 
     md.setSpeeds(300 + output, 300 - output);
+    //md.setSpeeds(150 + output, 150 - output);
   }
 
   while (encoder_L_value < target_Tick - 200)
@@ -281,10 +290,10 @@ void moveForward(int gridNum) {        //temporary treat gridNum as disctance in
   while (encoder_L_value < target_Tick)
   {
     output = tuneWithPID();
-    md.setSpeeds(200 + output, 200 - output);
+    //md.setSpeeds(200 + output, 200 - output);
+    md.setSpeeds(150 + output, 150 - output);
   }
-  md.setBrakes(brake_SpeedR, brake_SpeedL 
-  );
+  md.setBrakes(brake_SpeedR, brake_SpeedL);
 
   delay(80);
   md.setBrakes(0, 0);
@@ -406,13 +415,13 @@ int rotateLeft(int angle) {
   integral = 0;
   angle = angle/100;
   
-  if (angle <= 5) target_Tick = angle * 5.2;
+  if (angle <= 5) target_Tick = angle * 5.5;//5.2
   else if (angle <= 10) target_Tick = angle * 6.3;
   else if (angle <= 15) target_Tick = angle * 6.4;
   else if (angle <= 30) target_Tick = angle * 7.7; //7.72
   else if (angle <= 45) target_Tick = angle * 8.01; //8.635
   else if (angle <= 60) target_Tick = angle * 8.3;
-  else if (angle <= 90) target_Tick = angle * 8.47; //8.643
+  else if (angle <= 90) target_Tick = angle * 8.62;//47; //8.643
   else if (angle <=180 ) target_Tick = angle * 9.75;    //tune 180
   else if (angle <=360 ) target_Tick = angle * 9.37;
   else if (angle <= 720) target_Tick = angle * 9.15;
@@ -452,13 +461,13 @@ int rotateRight(int angle) {
   integral = 0;
   angle = angle/100;
 
-  if (angle <= 5) target_Tick = angle * 5.2;
+  if (angle <= 5) target_Tick = angle * 5.7;//5.2
   else if (angle <= 10) target_Tick = angle * 6.3;
   else if (angle <= 15) target_Tick = angle * 6.4;
   else if (angle <= 30) target_Tick = angle * 7.7; //7.72
   else if (angle <= 45) target_Tick = angle * 8.01; //8.635
   else if (angle <= 60) target_Tick = angle * 8.3;
-  else if (angle <= 90) target_Tick = angle * 8.41; //8.643
+  else if (angle <= 90) target_Tick = angle * 8.61;//7; //8.643
   else if (angle <=180 ) target_Tick = angle * 9.75;    //tune 180
   else if (angle <=360 ) target_Tick = angle * 9.37;
   else if (angle <= 720) target_Tick = angle * 9.15;
@@ -505,7 +514,7 @@ void moveForward_without_ramp(double cmDis) {        //temporary treat gridNum a
     md.setSpeeds(100 + output, 100 - output);
   }
   
-  md.setBrakes(400, 385);
+  md.setBrakes(400, 400); //400, 385
   
   delay(10);
   //md.setBrakes(0, 0);
@@ -572,17 +581,24 @@ int rotateRight_without_ramp(double angle) {
   //90 - 8.8
   //360 - 8.96
   
-  target_Tick = angle * 8.78;
+  //target_Tick = angle * 8.78;
   //target_Tick = angle * 8.6;
+  target_Tick = angle * 5.2;
 
   while (encoder_L_value < target_Tick) 
   {
     //HACK: I don't know what's the problem. But this way fixed it.
     //But we can't do this because the String will be sent to the rPi.
-    Serial.println("A");
+    Serial.print("");
     output = tuneWithPID();
     md.setSpeeds(-(100 + output), 100 - output);
   }
+
+  /*while (encoder_L_value < target_Tick*0.2  )
+  {
+    output = tuneWithPID();
+    md.setSpeeds(-(100 + output), 100 - output);
+  }*/
   md.setBrakes(400,400);
   delay(10);
   md.setBrakes(0, 0);
@@ -688,9 +704,9 @@ int gridsAwaySL(int dis)
 
 int gridsAwaySR(int dis)
 {
-  if (abs(dis) < 18) return 0;
-  else if (abs(dis) < 27) return 1;     //or 36
-  else if (abs(dis) < 40) return 2;     //54
+  if (abs(dis) < 16) return 0;          //18
+  else if (abs(dis) < 26) return 1;     //27  //37
+  else if (abs(dis) < 40) return 2;     //40  //54
   else return 3;
 }
 
@@ -756,11 +772,11 @@ void alignAngle_without_alignDis()
     int error = sensor_L_dis - sensor_R_dis;
     
     if (error >= 1){
-      Serial.println("Right");
+      //Serial.println("Right");
       rotateRight_without_ramp(0.5);
     }
     else if (error <= -1){
-      Serial.println("Left");
+      //Serial.println("Left");
       rotateLeft_without_ramp(0.5);
     }
     else break;

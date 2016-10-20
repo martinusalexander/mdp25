@@ -1,5 +1,7 @@
 package mdp;
 
+import org.json.simple.JSONObject;
+
 public class App {
 	
 	protected static Arena arena;
@@ -34,7 +36,7 @@ public class App {
 	
 	public static void generateRobot() {
 		//Initialize robot
-		robot = new Robot(1, 1, Robot.HEADING_UP);
+		robot = new Robot(1, 1, Robot.HEADING_DOWN);
 	}
 	
 	public static void displayArena() {
@@ -59,10 +61,29 @@ public class App {
 			 				robot.command(Robot.EXPLORE);
 			 			} else if (message.toUpperCase().contains("S;")) {
 			 				robot.command(Robot.FASTEST_RUN);
-			 			} else if (message.toUpperCase().contains("R;")) {
+			 			} else if (message.toUpperCase().contains("RESET;")) {
 			 				//Temporary, need to fix
 			 				simulator.reset();
-			 			} /*else if (message.toUpperCase().substring(0,1).equals("A")) {
+			 			} else if (message.toUpperCase().contains("R;")) {
+			 				robot.command(Robot.TURN_RIGHT);
+			 			} else if (message.toUpperCase().contains("L;")) {
+			 				robot.command(Robot.TURN_LEFT);
+			 			} else if (message.toUpperCase().contains("F;")) {
+			 				robot.command(Robot.MOVE_FORWARD);
+			 			} else if (message.toUpperCase().contains("B;")) {
+			 				robot.command(Robot.MOVE_BACKWARD);
+			 			} else if (message.toUpperCase().contains("D1;")) {
+			 				String arenaData1 = App.arena.getArenaDataPart1();
+			 				JSONObject jsonObject = new JSONObject();
+			 				jsonObject.put("MDF1", arenaData1);
+			 				App.connectionManager.sendMessage(jsonObject.toString(), ConnectionManager.SEND_TO_ANDROID);
+			 			} else if (message.toUpperCase().contains("D2;")) {
+			 				String arenaData2 = App.arena.getArenaDataPart2();
+			 				JSONObject jsonObject = new JSONObject();
+			 				jsonObject.put("MDF2", arenaData2);
+			 				App.connectionManager.sendMessage(jsonObject.toString(), ConnectionManager.SEND_TO_ANDROID);
+			 			}
+			 			/*else if (message.toUpperCase().substring(0,1).equals("A")) {
 			 				connectionManager.sendMessage(message.substring(1), ConnectionManager.SEND_TO_ROBOT);
 			 			}*/
 			 			//Prevent inconsistent message receiving process

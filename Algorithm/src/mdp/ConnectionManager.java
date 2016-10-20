@@ -98,16 +98,14 @@ public class ConnectionManager {
             sendMessage(message, destination);
         }
 
-        System.out.println("Message sent: ****" + message + "****");
+        System.out.println("Message sent: " + message );
     }
 
     public String readMessage() {
         String messageReceived = "";
         try {
-        	System.out.println("Called");
             messageReceived = fromRPi.nextLine();
-            System.out.println("Here AB");
-            System.out.println("Message received: ****" + messageReceived + "****");
+            System.out.println("Message received: " + messageReceived);
             
         }catch (Exception e){
             e.printStackTrace();
