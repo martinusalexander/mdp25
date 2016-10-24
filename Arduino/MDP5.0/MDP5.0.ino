@@ -421,7 +421,7 @@ int rotateLeft(int angle) {
   else if (angle <= 30) target_Tick = angle * 7.7; //7.72
   else if (angle <= 45) target_Tick = angle * 8.01; //8.635
   else if (angle <= 60) target_Tick = angle * 8.3;
-  else if (angle <= 90) target_Tick = angle * 8.62;//47; //8.643
+  else if (angle <= 90) target_Tick = angle * 8.643;//47; //8.62
   else if (angle <=180 ) target_Tick = angle * 9.75;    //tune 180
   else if (angle <=360 ) target_Tick = angle * 9.37;
   else if (angle <= 720) target_Tick = angle * 9.15;
@@ -467,7 +467,7 @@ int rotateRight(int angle) {
   else if (angle <= 30) target_Tick = angle * 7.7; //7.72
   else if (angle <= 45) target_Tick = angle * 8.01; //8.635
   else if (angle <= 60) target_Tick = angle * 8.3;
-  else if (angle <= 90) target_Tick = angle * 8.61;//7; //8.643
+  else if (angle <= 90) target_Tick = angle * 8.54;//7; //8.643 //8.61
   else if (angle <=180 ) target_Tick = angle * 9.75;    //tune 180
   else if (angle <=360 ) target_Tick = angle * 9.37;
   else if (angle <= 720) target_Tick = angle * 9.15;

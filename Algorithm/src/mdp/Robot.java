@@ -182,7 +182,7 @@ public class Robot {
 						this.command(TURN_LEFT);
 						break;
 				}
-			} else if (counter % 6 == 0) {
+			} else if (counter % 5 == 0) {
 				calibrateRobotPositionLeftRight();
 			} else {
 				calibrateRobotPositionFront();
