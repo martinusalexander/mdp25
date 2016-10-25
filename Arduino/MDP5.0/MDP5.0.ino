@@ -40,12 +40,13 @@ SharpIR sensor_SR(sensor_SR_pin,25,100,1080);
 
 
 //declaring constant
-float encoder_R_value = 0, encoder_L_value = 0, target_Tick = 0;
+float encoder_R_value = 0, encoder_L_value = 0;
+float target_Tick = 0;
 float brake_SpeedL, brake_SpeedR, str8_SpeedL, str8_SpeedR, rotate_SpeedL, rotate_SpeedR, L_offset;
 double output;
 double error = 0.0, integral = 0.0;
 boolean resend = false;
-int prev_C_dis;
+//int prev_C_dis;
 
 String sendStr, sendStr1, sendStr2, sendStr3;
 
@@ -224,6 +225,8 @@ double tuneWithPID()
   double drive, last_tick;
   double kp, ki, kd, p, i, d;
 
+  //kp = 45;
+  //kp = 25;
   kp = 40;
   ki = 0.1;
   kd = 0.01;
@@ -262,16 +265,16 @@ void moveForward(int gridNum) {        //temporary treat gridNum as disctance in
   else if(cmDis<=50) target_Tick = cmDis * 58.7;  //done
   else if(cmDis<=60) target_Tick = cmDis * 58.9;  //done
   else if(cmDis<=70) target_Tick = cmDis * 58.9;  //
-  else if(cmDis<=80) target_Tick = cmDis * 58.9;  //done
-  else if(cmDis<=90) target_Tick = cmDis * 58.9;  //
-  else if(cmDis<=100) target_Tick = cmDis * 58.9;   //
-  else if(cmDis<=110) target_Tick = cmDis * 58.9;
-  else if(cmDis<=120) target_Tick = cmDis * 58.9;   //   max
-  else if(cmDis<=130) target_Tick = cmDis * 58.9;
-  else if(cmDis<=140) target_Tick = cmDis * 58.9;  
-  else if(cmDis<=150) target_Tick = cmDis * 58.9;
-  else if(cmDis<=160) target_Tick = cmDis * 58.9; 
-  else if(cmDis<=170) target_Tick = cmDis * 58.9;  
+  else if(cmDis<=80) target_Tick = cmDis * 59;  //done
+  else if(cmDis<=90) target_Tick = cmDis * 59;  //
+  else if(cmDis<=100) target_Tick = cmDis * 59;   //
+  else if(cmDis<=110) target_Tick = cmDis * 59;
+  else if(cmDis<=120) target_Tick = cmDis * 59;   //   max
+  else if(cmDis<=130) target_Tick = cmDis * 59;
+  else if(cmDis<=140) target_Tick = cmDis * 59;  
+  else if(cmDis<=150) target_Tick = cmDis * 59;
+  else if(cmDis<=160) target_Tick = cmDis * 59; 
+  else if(cmDis<=170) target_Tick = cmDis * 59;  
   else target_Tick = cmDis * 58.9;
 
     while (encoder_L_value < 200 )
@@ -421,7 +424,7 @@ int rotateLeft(int angle) {
   else if (angle <= 30) target_Tick = angle * 7.7; //7.72
   else if (angle <= 45) target_Tick = angle * 8.01; //8.635
   else if (angle <= 60) target_Tick = angle * 8.3;
-  else if (angle <= 90) target_Tick = angle * 8.643;//47; //8.62
+  else if (angle <= 90) target_Tick = angle * 8.66;//47; //8.65
   else if (angle <=180 ) target_Tick = angle * 9.75;    //tune 180
   else if (angle <=360 ) target_Tick = angle * 9.37;
   else if (angle <= 720) target_Tick = angle * 9.15;
@@ -467,7 +470,7 @@ int rotateRight(int angle) {
   else if (angle <= 30) target_Tick = angle * 7.7; //7.72
   else if (angle <= 45) target_Tick = angle * 8.01; //8.635
   else if (angle <= 60) target_Tick = angle * 8.3;
-  else if (angle <= 90) target_Tick = angle * 8.54;//7; //8.643 //8.61
+  else if (angle <= 90) target_Tick = angle * 8.464;//7; //8.643 //8.61
   else if (angle <=180 ) target_Tick = angle * 9.75;    //tune 180
   else if (angle <=360 ) target_Tick = angle * 9.37;
   else if (angle <= 720) target_Tick = angle * 9.15;
