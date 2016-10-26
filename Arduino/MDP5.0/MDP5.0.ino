@@ -60,10 +60,10 @@ void setup() {
 
   //initiating speed 
   
-  str8_SpeedL = 400;    //250
-  str8_SpeedR = 400;    //250
-  rotate_SpeedL = 350;    //150
-  rotate_SpeedR = 350;    //150
+  str8_SpeedL = 350;    //250
+  str8_SpeedR = 350;    //250
+  rotate_SpeedL = 300;    //150
+  rotate_SpeedR = 300;    //150
   brake_SpeedL = 400;    //250
   brake_SpeedR = 400;     //388
    /*
@@ -222,21 +222,24 @@ void LeftEncoderInc() {
 
 double tuneWithPID()
 {
-  double drive, last_tick;
+  double drive; 
+  double static last_tick = 0;
   double kp, ki, kd, p, i, d;
 
   //kp = 45;
   //kp = 25;
-  kp = 40;
-  ki = 0.1;
-  kd = 0.01;
+  kp = 1.7;
+  ki = 0;
+  kd = 0.5;
 
-  error = encoder_L_value - encoder_R_value;
+  error = encoder_L_value - encoder_R_value*0.988;
   integral += error;
+
+  Serial.println();
 
   p = error * kp;
   i = integral * ki;
-  d = (last_tick - encoder_L_value) * kd;
+  d = (encoder_L_value - last_tick) * kd;
   drive = p + i + d;
 
   last_tick = encoder_L_value;
@@ -251,11 +254,12 @@ void moveForward(int gridNum) {        //temporary treat gridNum as disctance in
   int output = 0;
   error = 0;
   integral = 0;
+  float secondTargetTick, resetTick = 559;
 
   float cmDis = gridNum * 10;
 
   if (cmDis<= 10) {
-    target_Tick = cmDis * 54.8 //54.5 // 49.3 //
+    target_Tick = cmDis * 55.9 //54.5 // 49.3 //
     ; //55.4
     brake_SpeedR = 377;   //381
   }
@@ -277,6 +281,8 @@ void moveForward(int gridNum) {        //temporary treat gridNum as disctance in
   else if(cmDis<=170) target_Tick = cmDis * 59;  
   else target_Tick = cmDis * 58.9;
 
+  secondTargetTick = target_Tick - 200;
+
     while (encoder_L_value < 200 )
   {
     output = tuneWithPID(); 
@@ -284,8 +290,12 @@ void moveForward(int gridNum) {        //temporary treat gridNum as disctance in
     //md.setSpeeds(150 + output, 150 - output);
   }
 
-  while (encoder_L_value < target_Tick - 200)
+  while (encoder_L_value < secondTargetTick)
   {
+    if (encoder_L_value > resetTick){
+      integral = 0;
+      resetTick += 559;
+    }
     output = tuneWithPID();
     md.setSpeeds(str8_SpeedR + output, str8_SpeedL - output);
   }
@@ -417,6 +427,7 @@ int rotateLeft(int angle) {
   error = 0;
   integral = 0;
   angle = angle/100;
+  float firstTargetTick, secondTargetTick;
   
   if (angle <= 5) target_Tick = angle * 5.5;//5.2
   else if (angle <= 10) target_Tick = angle * 6.3;
@@ -424,7 +435,7 @@ int rotateLeft(int angle) {
   else if (angle <= 30) target_Tick = angle * 7.7; //7.72
   else if (angle <= 45) target_Tick = angle * 8.01; //8.635
   else if (angle <= 60) target_Tick = angle * 8.3;
-  else if (angle <= 90) target_Tick = angle * 8.66;//47; //8.65
+  else if (angle <= 90) target_Tick = angle * 8.83;//47; //8.65
   else if (angle <=180 ) target_Tick = angle * 9.75;    //tune 180
   else if (angle <=360 ) target_Tick = angle * 9.37;
   else if (angle <= 720) target_Tick = angle * 9.15;
@@ -432,13 +443,16 @@ int rotateLeft(int angle) {
   else if (angle <= 1080) target_Tick = angle * 9.06;
   else target_Tick = angle * 9.0;
 
-  while (encoder_L_value < target_Tick*0.2 )
+  firstTargetTick = target_Tick * 0.2;
+  secondTargetTick = target_Tick * 0.6;
+
+  while (encoder_L_value < firstTargetTick )
   {
     output = tuneWithPID();
     md.setSpeeds(150 + output, -(150 - output));
   }
 
-  while (encoder_L_value < target_Tick*0.7) 
+  while (encoder_L_value < secondTargetTick) 
   {
     output = tuneWithPID();
     md.setSpeeds(rotate_SpeedR + output, -(rotate_SpeedL - output));
@@ -463,6 +477,7 @@ int rotateRight(int angle) {
   error = 0;
   integral = 0;
   angle = angle/100;
+  float firstTargetTick, secondTargetTick;
 
   if (angle <= 5) target_Tick = angle * 5.7;//5.2
   else if (angle <= 10) target_Tick = angle * 6.3;
@@ -470,22 +485,25 @@ int rotateRight(int angle) {
   else if (angle <= 30) target_Tick = angle * 7.7; //7.72
   else if (angle <= 45) target_Tick = angle * 8.01; //8.635
   else if (angle <= 60) target_Tick = angle * 8.3;
-  else if (angle <= 90) target_Tick = angle * 8.464;//7; //8.643 //8.61
+  else if (angle <= 90) target_Tick = angle * 8.722;//7; //8.643 //8.61
   else if (angle <=180 ) target_Tick = angle * 9.75;    //tune 180
   else if (angle <=360 ) target_Tick = angle * 9.37;
   else if (angle <= 720) target_Tick = angle * 9.15;
   else if (angle <= 900) target_Tick = angle * 9.16;
   else if (angle <= 1080) target_Tick = angle * 9.06;
   else target_Tick = angle * 9.0;
+
+  firstTargetTick = target_Tick * 0.2;
+  secondTargetTick = target_Tick * 0.6;
   
 
-  while (encoder_L_value < target_Tick*0.2  )
+  while (encoder_L_value < firstTargetTick  )
   {
     output = tuneWithPID();
     md.setSpeeds(-(150 + output), 150 - output);
   }
   
-  while (encoder_L_value < target_Tick*0.7) {
+  while (encoder_L_value < secondTargetTick) {
     output = tuneWithPID();
     md.setSpeeds(-(rotate_SpeedL + output), rotate_SpeedR - output);
   }
