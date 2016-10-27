@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Stack;
+import java.util.TreeSet;
 
 import org.json.simple.JSONObject;
 
@@ -1117,4 +1118,89 @@ public class Robot {
 			App.connectionManager.readMessage();
 		}
 	}
+
+	private String unexploredSearcher() {
+		List<Grid> unexploredGrids = new LinkedList<Grid>();
+		List<Grid> traversableGrids = new ArrayList<Grid>();	// centre point of robot traversable only
+		Set<Grid> contactedGrids = new TreeSet<Grid>();
+		Grid[][] arenaGrids = arena.getArenaGrids();
+		List<Grid> gridRoute, bestGridRoute;
+		Grid bestUnexploredGrid;
+		boolean flag;
+		int i, j;
+		
+		// Scan to fill lists
+		for (i = 1; i < Arena.ARENA_LENGTH-1; i++){
+			for (j = 1; j < Arena.ARENA_HEIGHT-1; j++){
+				// grid is unexplored, assuming flawless wall hugging
+				if (!arenaGrids[i][j].isVisited){
+					unexploredGrids.add(arenaGrids[i][j]);
+				}
+				// buffer from wall, checking using 3x3 padding (buffered)
+				else {
+					// check clockwise of centre point, accepting unexplored grids as walkable grids
+					flag = arenaGrids[i-1][j-1].isWalkable() || !arenaGrids[i-1][j-1].isVisited();
+					flag = (arenaGrids[i][j-1].isWalkable() || !arenaGrids[i][j-1].isVisited()) && flag;
+					flag = (arenaGrids[i+1][j-1].isWalkable() || !arenaGrids[i+1][j-1].isVisited()) && flag;
+					flag = (arenaGrids[i+1][j].isWalkable() || !arenaGrids[i+1][j].isVisited()) && flag;
+					flag = (arenaGrids[i+1][j+1].isWalkable() || !arenaGrids[i+1][j+1].isVisited()) && flag;
+					flag = (arenaGrids[i][j+1].isWalkable() || !arenaGrids[i][j+1].isVisited()) && flag;
+					flag = (arenaGrids[i-1][j+1].isWalkable() || !arenaGrids[i-1][j+1].isVisited()) && flag;
+					flag = (arenaGrids[i-1][j].isWalkable() || !arenaGrids[i-1][j].isVisited()) && flag;
+					// grid is centre point of robot traversable
+					if (flag) traversableGrids.add(arenaGrids[i][j]);
+				}
+			}
+		}
+		
+		// Find traversable grids in contact with unexplored grids
+		for (Grid g : (Grid) unexploredGrids.toArray()){
+			// Get grid's coordinates
+			i = g.getX();
+			j = g.getY();
+			// Check four directions for traversable grids, add to list if any
+			if (traversableGrids.contains(arenaGrids[i-1][j])){
+				contactedGrids.add(arenaGrids[i-1][j]);
+			}
+			if (traversableGrids.contains(arenaGrids[i+1][j])){
+				contactedGrids.add(arenaGrids[i+1][j]);
+			}
+			if (traversableGrids.contains(arenaGrids[i][j-1]){
+				contactedGrids.add(arenaGrids[i][j-1]);
+			}
+			if (traversableGrids.contains(arenaGrids[i][j+1]){
+				contactedGrids.add(arenaGrids[i][j+1]);
+			}
+		}
+		
+		// robot's current position
+		// xLocation, yLocation
+		
+		// At start grid
+		arenaGrids[xLocation][yLocation].setPathCost(0);
+		
+		// Identify best gridRoute to nearest unexplored grid
+		for (Grid g : (Grid) contactedGrids.toArray()){
+			gridRoute = aStarSearch(arenaGrids[xLocation][yLocation],g,traversableGrids);
+			try{
+				if (gridRoute.size() < bestGridRoute.size()){
+					bestGridRoute = gridRoute;
+					bestUnexploredGrid = contactedGrids.get(contactedGrids.indexOf(g));
+				}
+			} catch (Exception e){
+				bestGridRoute = gridRoute;
+				bestUnexploredGrid = contactedGrids.get(contactedGrids.indexOf(g));
+			}
+		}
+		
+		// Generate movement string
+	}
+	
+	private ArrayList<Grid> aStarSearch(Grid start, Grid end, List gridTestList){
+		if (start.equals(end)) return new 
+	}
+}
+
+class AStarSearch{
+	
 }

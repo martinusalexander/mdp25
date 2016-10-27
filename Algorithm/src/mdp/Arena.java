@@ -357,5 +357,9 @@ public class Arena {
     }
 	
 	
+	// HL request
+	public Grid[][] getArenaGrids(){
+		return grid;
+	}
 
 }
