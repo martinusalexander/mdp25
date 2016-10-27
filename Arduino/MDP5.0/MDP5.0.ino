@@ -232,7 +232,7 @@ double tuneWithPID()
   ki = 0;
   kd = 0.5;
 
-  error = encoder_L_value - encoder_R_value*0.988;
+  error = encoder_L_value - encoder_R_value*0.992;
   integral += error;
 
   Serial.println();
@@ -259,7 +259,7 @@ void moveForward(int gridNum) {        //temporary treat gridNum as disctance in
   float cmDis = gridNum * 10;
 
   if (cmDis<= 10) {
-    target_Tick = cmDis * 55.9 //54.5 // 49.3 //
+    target_Tick = cmDis * 54.23 //54.5 // 49.3 //
     ; //55.4
     brake_SpeedR = 377;   //381
   }
@@ -281,13 +281,13 @@ void moveForward(int gridNum) {        //temporary treat gridNum as disctance in
   else if(cmDis<=170) target_Tick = cmDis * 59;  
   else target_Tick = cmDis * 58.9;
 
-  secondTargetTick = target_Tick - 200;
+  secondTargetTick = target_Tick - 150;
 
-    while (encoder_L_value < 200 )
+    while (encoder_L_value < 100 )
   {
     output = tuneWithPID(); 
-    md.setSpeeds(300 + output, 300 - output);
-    //md.setSpeeds(150 + output, 150 - output);
+    //md.setSpeeds(300 + output, 300 - output);
+    md.setSpeeds(100 + encoder_L_value + output, 100 + encoder_L_value - output);
   }
 
   while (encoder_L_value < secondTargetTick)
@@ -309,7 +309,7 @@ void moveForward(int gridNum) {        //temporary treat gridNum as disctance in
   md.setBrakes(brake_SpeedR, brake_SpeedL);
 
   delay(80);
-  md.setBrakes(0, 0);
+  //md.setBrakes(0, 0);
 }
 /*
 void moveForward(int gridNum) {       
@@ -435,7 +435,7 @@ int rotateLeft(int angle) {
   else if (angle <= 30) target_Tick = angle * 7.7; //7.72
   else if (angle <= 45) target_Tick = angle * 8.01; //8.635
   else if (angle <= 60) target_Tick = angle * 8.3;
-  else if (angle <= 90) target_Tick = angle * 8.83;//47; //8.65
+  else if (angle <= 90) target_Tick = angle * 8.74;//47; //8.65
   else if (angle <=180 ) target_Tick = angle * 9.75;    //tune 180
   else if (angle <=360 ) target_Tick = angle * 9.37;
   else if (angle <= 720) target_Tick = angle * 9.15;
@@ -485,7 +485,7 @@ int rotateRight(int angle) {
   else if (angle <= 30) target_Tick = angle * 7.7; //7.72
   else if (angle <= 45) target_Tick = angle * 8.01; //8.635
   else if (angle <= 60) target_Tick = angle * 8.3;
-  else if (angle <= 90) target_Tick = angle * 8.722;//7; //8.643 //8.61
+  else if (angle <= 90) target_Tick = angle * 8.716;//7; //8.643 //8.61
   else if (angle <=180 ) target_Tick = angle * 9.75;    //tune 180
   else if (angle <=360 ) target_Tick = angle * 9.37;
   else if (angle <= 720) target_Tick = angle * 9.15;
