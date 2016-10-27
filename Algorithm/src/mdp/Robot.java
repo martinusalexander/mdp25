@@ -1197,10 +1197,25 @@ public class Robot {
 	}
 	
 	private ArrayList<Grid> aStarSearch(Grid start, Grid end, List gridTestList){
-		if (start.equals(end)) return new 
+		LinkedList<Grid> queue = new LinkedList<Grid>();
+		ArrayList<Grid> expandedNodes = new ArrayList<Grid>();
+		
+		// Initialize all grids in gridTestList to large value (999)
+		int i = 0;
+		while (i < gridTestList.size()){
+			gridTestList.get(i).setPathCost(999);
+			gridTestList.get(i++).setHeuristic(999);
+		}
+		
+		// Add first grid to queue
+		queue.add(start);
+		
+		// Start search
+		return aStarSearch(end, gridTestList, queue, expandedNodes);
 	}
-}
-
-class AStarSearch{
 	
+	private ArrayList<Grid> aStarSearch(Grid end, List gridTestList, LinkedList queue, ArrayList expandedNodes){
+		Grid expandingNode = queue.remove();
+		
+	}
 }
