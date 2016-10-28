@@ -1120,6 +1120,8 @@ public class Robot {
 	}
 
 	private String unexploredSearcher() {
+		// NOTE: Robot is expected to check its surroundings while attempting to reach destination
+		
 		List<Grid> unexploredGrids = new LinkedList<Grid>();
 		List<Grid> traversableGrids = new ArrayList<Grid>();	// centre point of robot traversable only
 		Set<Grid> contactedGrids = new TreeSet<Grid>();
@@ -1196,26 +1198,130 @@ public class Robot {
 		// Generate movement string
 	}
 	
-	private ArrayList<Grid> aStarSearch(Grid start, Grid end, List gridTestList){
-		LinkedList<Grid> queue = new LinkedList<Grid>();
-		ArrayList<Grid> expandedNodes = new ArrayList<Grid>();
+	private ArrayList<Grid> aStarSearch(Grid start, Grid end, List<Grid> traversableGridList){
+		// start and end are elements of traversableGridList
+		ArrayList<Grid> queue = new ArrayList<Grid>();
+		int i, index;
+		Grid gridEndPtr, gridStartPtr;
+		int end_x, end_y, start_x, start_y;
+		boolean flag;
 		
-		// Initialize all grids in gridTestList to large value (999)
-		int i = 0;
-		while (i < gridTestList.size()){
-			gridTestList.get(i).setPathCost(999);
-			gridTestList.get(i++).setHeuristic(999);
+		// Error checking
+		if (!traversableGridList.contains(start) || !traversableGridList.contains(end)) {
+			System.err.println("Invalid aStarSearch() argument(s)");
+			return queue;
 		}
 		
-		// Add first grid to queue
+		// Initialize all grids in traversableGridList to large value (999)
+		i = 0;
+		while (i < traversableGridList.size()){
+			traversableGridList.get(i).setPathCost(999);
+			traversableGridList.get(i++).setHeuristic(999);
+		}
+		
+		// initialize start grid values
+		start.setPathCost(0);
+		start.setHeuristic(calculateHeuristic(start,end));
+		
+		// add start grid to queue
 		queue.add(start);
 		
-		// Start search
-		return aStarSearch(end, gridTestList, queue, expandedNodes);
+		// start AStarSearch expansion
+		aStarSearch(0, end, traversableGridList, queue);
+		
+		// return empty list if end is not found in queue
+		if (!queue.contains(end)){
+			queue.clear();
+			return queue;
+		}
+		
+		// end is found in queue, remove trailing grids
+		index = queue.indexOf(end);
+		while (index > queue.size()){
+			queue.remove(index+1);
+		}
+		
+		// remove unneccessary nodes
+		gridEndPtr = end;
+		gridStartPtr = queue.get(--index);
+		while (index > 0){						// while (!gridStartPtr.equals(queue.get(0)))
+			end_x = gridEndPtr.getX();
+			end_y = gridEndPtr.getY();
+			start_x = gridStartPtr.getX();
+			start_y = gridStartPtr.getY();
+			
+			flag = (end_x == start_x) && (end_y == start_y + 1);
+			flag = ((end_x == start_x) && (end_y == start_y - 1)) || flag;
+			flag = ((end_y == start_y) && (start_x == start_x + 1)) || flag;
+			flag = ((end_y == start_y) && (start_x == start_x - 1)) || flag;
+			
+			if (flag) {
+				gridEndPtr = gridStartPtr;
+				gridStartPtr = queue.get(--index);
+			} else {
+				gridStartPtr = queue.get(index - 1);
+				queue.remove(index--);
+			}
+		}
+		
+		return queue;
 	}
 	
-	private ArrayList<Grid> aStarSearch(Grid end, List gridTestList, LinkedList queue, ArrayList expandedNodes){
-		Grid expandingNode = queue.remove();
+	private void aStarSearch(int index, Grid destGrid, List<Grid> traversableGridList, List<Grid> queue){
+		Grid currentGrid, checkingGrid;
+		int x, y, nextPathCost;
 		
+		// extract currentGrid's information
+		currentGrid = queue.get(index);
+		x = currentGrid.getX();
+		y = currentGrid.getY();
+		nextPathCost = currentGrid.getPathCost() + 1;
+		
+		// grid[x+1][y]
+		if (x+1 < Arena.ARENA_LENGTH){
+			checkingGrid = Arena.getGrid(x+1,y);
+			if (traversableGridList.contains(checkingGrid)){
+				if (checkingGrid.getPathCost() > nextPathCost){
+					checkingGrid.setPathCost(nextPathCost);
+					if (!queue.contains(checkingGrid)){
+						queue.add(checkingGrid);
+					}
+				}
+			}
+		}
+		
+		// grid[x-1][y]
+		if (x-1 >= 0){
+			checkingGrid = Arena.getGrid(x-1,y);
+		}
+		
+		// grid[x][y+1]
+		if (y+1 < Arena.ARENA_HEIGHT){
+			checkingGrid = Arena.getGrid(x,y+1);
+		}
+		
+		// grid[x][y-1]
+		if (y-1 >= 0){
+			checkingGrid = Arena.getGrid(x,y-1);
+		}
+		
+		// sort queue in descending order
+		Collections.sort(queue);
+		
+		// stops if destGrid is added to queue, else continue
+		if (queue.contains(destGrid)){
+			return;
+		} else {
+			aStarSearch(index, destGrid, traversableGridList, queue);
+		}
+	}
+	
+	private int calculateHeuristic(Grid start, Grid end){
+		// simple distance from start grid to end grid
+		int x_diff = start.getX() - end.getX();
+		int y_diff = start.getY() - end.getY();
+		if (x_diff < 0) x_diff = -x_diff;
+		if (y_diff < 0) y_diff = -y_diff;
+		return x_diff + y_diff;
 	}
 }
