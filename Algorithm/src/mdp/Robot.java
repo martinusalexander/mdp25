@@ -1266,6 +1266,7 @@ public class Robot {
 			flag = ((end_x == start_x) && (end_y == start_y - 1)) || flag;
 			flag = ((end_y == start_y) && (start_x == start_x + 1)) || flag;
 			flag = ((end_y == start_y) && (start_x == start_x - 1)) || flag;
+			flag = (gridStartPtr.getPathCost() == gridEndPtr.getPathCost() - 1) && flag;
 			
 			if (flag) {
 				gridEndPtr = gridStartPtr;
