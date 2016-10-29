@@ -205,6 +205,10 @@ public class Robot {
 			this.command(TURN_RIGHT);System.out.println("amarl");
 			sendArenaData();
 		}
+		
+		// additional code for exploring unexplored grids, returns to start grid at (1,1) at the end
+		unexploredSearcher();
+		
 		//Inform Android if done
 		if (!App.isSimulation) {
 			App.connectionManager.sendMessage("done", ConnectionManager.SEND_TO_ANDROID);
@@ -1119,7 +1123,7 @@ public class Robot {
 		}
 	}
 
-	private String unexploredSearcher() {
+	private void unexploredSearcher() {
 		// NOTE: Robot is expected to check its surroundings while attempting to reach destination
 		
 		List<Grid> unexploredGrids = new LinkedList<Grid>();
@@ -1155,6 +1159,12 @@ public class Robot {
 			}
 		}
 		
+		// if unexploredGrids is empty, return to start
+		if (unexploredGrids.isEmpty()) {
+			returnToStart(traversableGrids);
+			return;
+		}
+		
 		// Find traversable grids in contact with unexplored grids
 		for (Grid g : (Grid) unexploredGrids.toArray()){
 			// Get grid's coordinates
@@ -1175,15 +1185,9 @@ public class Robot {
 			}
 		}
 		
-		// robot's current position
-		// xLocation, yLocation
-		
-		// At start grid
-		arenaGrids[xLocation][yLocation].setPathCost(0);
-		
 		// Identify best gridRoute to nearest unexplored grid
 		for (Grid g : (Grid) contactedGrids.toArray()){
-			gridRoute = aStarSearch(arenaGrids[xLocation][yLocation],g,traversableGrids);
+			gridRoute = aStarSearch(arenaGrids[this.xLocation][this.yLocation],g,traversableGrids);
 			try{
 				if (gridRoute.size() < bestGridRoute.size()){
 					bestGridRoute = gridRoute;
@@ -1195,14 +1199,21 @@ public class Robot {
 			}
 		}
 		
-		// Generate movement string
+		// move robot to destination grid
+		moveRobot(bestGridRoute);
+		
+		// clear immediate unexplored grids using pad scanning
+		//clearUnexplored();			// skipping this code will result in longer time taken
+		
+		// check for unexplored grid and attempt to visit grid again
+		unexploredSearcher();
 	}
 	
 	private ArrayList<Grid> aStarSearch(Grid start, Grid end, List<Grid> traversableGridList){
 		// start and end are elements of traversableGridList
 		ArrayList<Grid> queue = new ArrayList<Grid>();
 		int i, index;
-		Grid gridEndPtr, gridStartPtr;
+		Grid gridEndPtr, gridStartPtr, gridPtr;
 		int end_x, end_y, start_x, start_y;
 		boolean flag;
 		
@@ -1212,11 +1223,12 @@ public class Robot {
 			return queue;
 		}
 		
-		// Initialize all grids in traversableGridList to large value (999)
+		// Initialize all grids in traversableGridList to large value (999) and calculate heuristic
 		i = 0;
 		while (i < traversableGridList.size()){
-			traversableGridList.get(i).setPathCost(999);
-			traversableGridList.get(i++).setHeuristic(999);
+			gridPtr = traversableGridList.get(i);
+			gridPtr.setPathCost(999);
+			gridPtr.setHeuristic(calculateHeuristic(start, gridPtr));
 		}
 		
 		// initialize start grid values
@@ -1293,16 +1305,40 @@ public class Robot {
 		// grid[x-1][y]
 		if (x-1 >= 0){
 			checkingGrid = Arena.getGrid(x-1,y);
+			if (traversableGridList.contains(checkingGrid)){
+				if (checkingGrid.getPathCost() > nextPathCost){
+					checkingGrid.setPathCost(nextPathCost);
+					if (!queue.contains(checkingGrid)){
+						queue.add(checkingGrid);
+					}
+				}
+			}
 		}
 		
 		// grid[x][y+1]
 		if (y+1 < Arena.ARENA_HEIGHT){
 			checkingGrid = Arena.getGrid(x,y+1);
+			if (traversableGridList.contains(checkingGrid)){
+				if (checkingGrid.getPathCost() > nextPathCost){
+					checkingGrid.setPathCost(nextPathCost);
+					if (!queue.contains(checkingGrid)){
+						queue.add(checkingGrid);
+					}
+				}
+			}
 		}
 		
 		// grid[x][y-1]
 		if (y-1 >= 0){
 			checkingGrid = Arena.getGrid(x,y-1);
+			if (traversableGridList.contains(checkingGrid)){
+				if (checkingGrid.getPathCost() > nextPathCost){
+					checkingGrid.setPathCost(nextPathCost);
+					if (!queue.contains(checkingGrid)){
+						queue.add(checkingGrid);
+					}
+				}
+			}
 		}
 		
 		// sort queue in descending order
@@ -1323,5 +1359,83 @@ public class Robot {
 		if (x_diff < 0) x_diff = -x_diff;
 		if (y_diff < 0) y_diff = -y_diff;
 		return x_diff + y_diff;
+	}
+	
+	private void moveRobot(List<Grid> travelRoute){
+		for (Grid nextGrid : travelRoute){
+			moveTo(nextGrid);
+		}
+	}
+	
+	private void moveTo(Grid next){
+		// move robot to grid 'end', 'end' has to be an adjacent grid
+		
+		int next_x, next_y;
+		Grid current = arena.getGrid(this.xLocation, this.yLocation);
+		
+		// check validity of grid 'next', return if premise is false
+		if (!((this.xLocation == next_x+1 && this.yLocation == next_y) ||
+			 (this.xLocation == next_x-1 && this.yLocation == next_y) ||
+			 (this.yLocation == next_y+1 && this.xLocation == next_x) ||
+			 (this.yLocation == next_y-1 && this.xLocation == next_x))
+			 ){
+			return;	
+		}
+		
+		// align facing of robot to next grid
+		alignFacing(next);
+		
+		// move forward to next grid
+		moveForward(1);
+	}
+	
+	private void alignFacing(Grid to){
+		int finalDirection, turningRequirement;
+		
+		// determine robot's final facing, stops if invalid
+		switch(this.xLocation - to.getX()){
+			case 1: finalDirection = HEADING_LEFT;
+				break;
+			case -1: finalDirection = HEADING_RIGHT;
+				break;
+			case 0: switch(this.yLocation - to.getY()){
+					case 1: finalDirection = HEADING_DOWN;
+						break;
+					case -1: finalDirection = HEADING_UP;
+						break;
+				}
+			default: return;
+		}
+		
+		// rotate robot
+		turningRequirement = ((finalDirection - this.direction)/90)%4;
+		// 0: no rotation, 1: turn right, 2: turn right twice, 3: turn left
+		switch(turningRequirement){
+			case 0: break;
+			case 1: turnRight();
+				break;
+			case 2: turnRight();
+				turnRight();
+				break;
+			case 3: turnLeft();
+				break;
+			default: break;
+		}
+	}
+	
+	private void clearUnexplored(){
+		// find unexplored grids in vicinity and move robot to there
+		
+	}
+	
+	private void returnToStart(List<Grid> traversableGridList){
+		Grid currentGrid = this.arena.getGrid(this.xLocation, this.yLocation);
+		Grid startGrid = this.arena.getGrid(1,1);
+		Grid facingGrid = this.arena.getGrid(1,2);
+		
+		List<Grid> travelRoute = aStarSearch(currentGrid, startGrid, traversableGridList);
+		moveRobot(travelRoute);
+		// add necessary calibration command here if any
+		alginFacing(facingGrid);
 	}
 }
