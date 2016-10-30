@@ -9,7 +9,7 @@ public class App {
 	protected static ArenaSimulator simulator;
 	protected static ConnectionManager connectionManager;
 	protected static Thread listenToAndroidThread;
-	protected static boolean isSimulation = false;
+	protected static boolean isSimulation = true;
 
 
 	public static void main(String[] args) {

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 
@@ -542,6 +543,9 @@ public class Robot {
 		} else {
 			processSensorData("");
 		}
+		
+		sendArenaData();
+		this.explorationPath.add(this.arena.getGrid(this.xLocation, this.yLocation));
 	}
 	
 	private void turnRight() {
@@ -560,6 +564,9 @@ public class Robot {
 		} else {
 			processSensorData("");
 		}
+		
+		sendArenaData();
+		this.explorationPath.add(this.arena.getGrid(this.xLocation, this.yLocation));
 	}
 	
 	private void moveForward(int distance) {
@@ -597,6 +604,9 @@ public class Robot {
 		} else {
 			processSensorData("");
 		}
+		
+		sendArenaData();
+		this.explorationPath.add(this.arena.getGrid(this.xLocation, this.yLocation));
 	}
 	
 	private void moveBackward() {
@@ -1128,9 +1138,9 @@ public class Robot {
 		
 		List<Grid> unexploredGrids = new LinkedList<Grid>();
 		List<Grid> traversableGrids = new ArrayList<Grid>();	// centre point of robot traversable only
-		Set<Grid> contactedGrids = new TreeSet<Grid>();
+		List<Grid> contactedGrids = new ArrayList<Grid>();
 		Grid[][] arenaGrids = arena.getArenaGrids();
-		List<Grid> gridRoute, bestGridRoute;
+		List<Grid> gridRoute, bestGridRoute = new ArrayList<Grid>();
 		Grid bestUnexploredGrid;
 		boolean flag;
 		int i, j;
@@ -1139,7 +1149,7 @@ public class Robot {
 		for (i = 1; i < Arena.ARENA_LENGTH-1; i++){
 			for (j = 1; j < Arena.ARENA_HEIGHT-1; j++){
 				// grid is unexplored, assuming flawless wall hugging
-				if (!arenaGrids[i][j].isVisited){
+				if (!arenaGrids[i][j].isVisited()){
 					unexploredGrids.add(arenaGrids[i][j]);
 				}
 				// buffer from wall, checking using 3x3 padding (buffered)
@@ -1159,6 +1169,12 @@ public class Robot {
 			}
 		}
 		
+		System.err.println("unexplored grids contain");
+		print(unexploredGrids);
+		
+		System.err.println("traversable grids contain");
+		print(traversableGrids);
+		
 		// if unexploredGrids is empty, return to start
 		if (unexploredGrids.isEmpty()) {
 			returnToStart(traversableGrids);
@@ -1166,38 +1182,58 @@ public class Robot {
 		}
 		
 		// Find traversable grids in contact with unexplored grids
-		for (Grid g : (Grid) unexploredGrids.toArray()){
+		for (Grid g : unexploredGrids){
 			// Get grid's coordinates
 			i = g.getX();
 			j = g.getY();
-			// Check four directions for traversable grids, add to list if any
-			if (traversableGrids.contains(arenaGrids[i-1][j])){
-				contactedGrids.add(arenaGrids[i-1][j]);
+			// Check eight directions for traversable grids, add to list if any
+			if (traversableGrids.contains(arenaGrids[i-2][j])){
+				if (!contactedGrids.contains(arenaGrids[i-2][j]))
+						contactedGrids.add(arenaGrids[i-2][j]);
 			}
-			if (traversableGrids.contains(arenaGrids[i+1][j])){
-				contactedGrids.add(arenaGrids[i+1][j]);
+			if (traversableGrids.contains(arenaGrids[i+2][j])){
+				if (!contactedGrids.contains(arenaGrids[i+2][j]))
+					contactedGrids.add(arenaGrids[i+2][j]);
 			}
-			if (traversableGrids.contains(arenaGrids[i][j-1]){
-				contactedGrids.add(arenaGrids[i][j-1]);
+			if (traversableGrids.contains(arenaGrids[i][j-2])){
+				if (!contactedGrids.contains(arenaGrids[i][j-2]))
+					contactedGrids.add(arenaGrids[i][j-2]);
 			}
-			if (traversableGrids.contains(arenaGrids[i][j+1]){
-				contactedGrids.add(arenaGrids[i][j+1]);
+			if (traversableGrids.contains(arenaGrids[i][j+2])){
+				if (!contactedGrids.contains(arenaGrids[i][j+2]))
+					contactedGrids.add(arenaGrids[i][j+2]);
+			}
+			for (int a = -1; a < 2; a += 2){
+				for (int b = -1; b < 2; b += 2){
+					if (traversableGrids.contains(arenaGrids[i+a][j+b])){
+						if (!contactedGrids.contains(arenaGrids[i+a][j+b]))
+							contactedGrids.add(arenaGrids[i+a][j+b]);
+					}
+				}
 			}
 		}
+		Collections.sort(contactedGrids);
+		
+		System.err.println("contactedGrids contain");
+		print(contactedGrids);
 		
 		// Identify best gridRoute to nearest unexplored grid
-		for (Grid g : (Grid) contactedGrids.toArray()){
+		for (Grid g : contactedGrids){
 			gridRoute = aStarSearch(arenaGrids[this.xLocation][this.yLocation],g,traversableGrids);
+			System.err.println(gridRoute);
 			try{
-				if (gridRoute.size() < bestGridRoute.size()){
+				if (gridRoute.size() < bestGridRoute.size() || bestGridRoute.isEmpty()){
 					bestGridRoute = gridRoute;
-					bestUnexploredGrid = contactedGrids.get(contactedGrids.indexOf(g));
+					//bestUnexploredGrid = contactedGrids.get(contactedGrids.indexOf(g));
+					bestUnexploredGrid = g;
 				}
 			} catch (Exception e){
 				bestGridRoute = gridRoute;
-				bestUnexploredGrid = contactedGrids.get(contactedGrids.indexOf(g));
+				//bestUnexploredGrid = contactedGrids.get(contactedGrids.indexOf(g));
+				bestUnexploredGrid = g;
 			}
 		}
+		print(bestGridRoute);
 		
 		// move robot to destination grid
 		moveRobot(bestGridRoute);
@@ -1226,7 +1262,7 @@ public class Robot {
 		// Initialize all grids in traversableGridList to large value (999) and calculate heuristic
 		i = 0;
 		while (i < traversableGridList.size()){
-			gridPtr = traversableGridList.get(i);
+			gridPtr = traversableGridList.get(i++);
 			gridPtr.setPathCost(999);
 			gridPtr.setHeuristic(calculateHeuristic(start, gridPtr));
 		}
@@ -1247,34 +1283,43 @@ public class Robot {
 			return queue;
 		}
 		
+		System.err.println("end: ("+end.getX()+","+end.getY()+")");
+		System.err.println("before tail removal");
+		print(queue);
+		
 		// end is found in queue, remove trailing grids
 		index = queue.indexOf(end);
-		while (index > queue.size()){
+		System.err.println("index = "+index);
+		System.err.println("size = "+queue.size());
+		while (index < queue.size()-1){
 			queue.remove(index+1);
 		}
 		
-		// remove unneccessary nodes
-		gridEndPtr = end;
-		gridStartPtr = queue.get(--index);
+		System.err.println("after tail removal");
+		print(queue);
+		
+		// remove unnecessary nodes
+		index = queue.size() - 1;
 		while (index > 0){						// while (!gridStartPtr.equals(queue.get(0)))
+			gridEndPtr = queue.get(index);
 			end_x = gridEndPtr.getX();
 			end_y = gridEndPtr.getY();
+			gridStartPtr = queue.get(index - 1);
 			start_x = gridStartPtr.getX();
 			start_y = gridStartPtr.getY();
 			
-			flag = (end_x == start_x) && (end_y == start_y + 1);
-			flag = ((end_x == start_x) && (end_y == start_y - 1)) || flag;
-			flag = ((end_y == start_y) && (start_x == start_x + 1)) || flag;
-			flag = ((end_y == start_y) && (start_x == start_x - 1)) || flag;
-			flag = (gridStartPtr.getPathCost() == gridEndPtr.getPathCost() - 1) && flag;
+			System.err.println("end_x="+end_x+", end_y="+end_y+",start_x="+start_x+",start_y="+start_y);
+			flag = (end_x == start_x) && ((end_y-start_y) == 1);
+			flag = flag || ((end_x == start_x) && ((end_y-start_y) == -1));
+			flag = flag || ((end_y == start_y) && ((end_x - start_x) == 1));
+			flag = flag || ((end_y == start_y) && ((end_x - start_x) == -1));
+			flag = flag && (gridEndPtr.getPathCost() == gridStartPtr.getPathCost() + 1);
+
+			System.err.print(flag);
+			print(queue);
 			
-			if (flag) {
-				gridEndPtr = gridStartPtr;
-				gridStartPtr = queue.get(--index);
-			} else {
-				gridStartPtr = queue.get(index - 1);
-				queue.remove(index--);
-			}
+			index--;
+			if (!flag) queue.remove(index);
 		}
 		
 		return queue;
@@ -1292,7 +1337,7 @@ public class Robot {
 		
 		// grid[x+1][y]
 		if (x+1 < Arena.ARENA_LENGTH){
-			checkingGrid = Arena.getGrid(x+1,y);
+			checkingGrid = arena.getGrid(x+1,y);
 			if (traversableGridList.contains(checkingGrid)){
 				if (checkingGrid.getPathCost() > nextPathCost){
 					checkingGrid.setPathCost(nextPathCost);
@@ -1305,7 +1350,7 @@ public class Robot {
 		
 		// grid[x-1][y]
 		if (x-1 >= 0){
-			checkingGrid = Arena.getGrid(x-1,y);
+			checkingGrid = arena.getGrid(x-1,y);
 			if (traversableGridList.contains(checkingGrid)){
 				if (checkingGrid.getPathCost() > nextPathCost){
 					checkingGrid.setPathCost(nextPathCost);
@@ -1318,7 +1363,7 @@ public class Robot {
 		
 		// grid[x][y+1]
 		if (y+1 < Arena.ARENA_HEIGHT){
-			checkingGrid = Arena.getGrid(x,y+1);
+			checkingGrid = arena.getGrid(x,y+1);
 			if (traversableGridList.contains(checkingGrid)){
 				if (checkingGrid.getPathCost() > nextPathCost){
 					checkingGrid.setPathCost(nextPathCost);
@@ -1331,7 +1376,7 @@ public class Robot {
 		
 		// grid[x][y-1]
 		if (y-1 >= 0){
-			checkingGrid = Arena.getGrid(x,y-1);
+			checkingGrid = arena.getGrid(x,y-1);
 			if (traversableGridList.contains(checkingGrid)){
 				if (checkingGrid.getPathCost() > nextPathCost){
 					checkingGrid.setPathCost(nextPathCost);
@@ -1349,7 +1394,7 @@ public class Robot {
 		if (queue.contains(destGrid)){
 			return;
 		} else {
-			aStarSearch(index, destGrid, traversableGridList, queue);
+			aStarSearch(index+1, destGrid, traversableGridList, queue);
 		}
 	}
 	
@@ -1363,8 +1408,12 @@ public class Robot {
 	}
 	
 	private void moveRobot(List<Grid> travelRoute){
+		Scanner sc = new Scanner(System.in);
+		System.err.println("robot at ("+this.xLocation+","+this.yLocation+")");
 		for (Grid nextGrid : travelRoute){
 			moveTo(nextGrid);
+			System.err.println("robot at ("+this.xLocation+","+this.yLocation+")");
+			sc.nextLine();
 		}
 	}
 	
@@ -1372,7 +1421,11 @@ public class Robot {
 		// move robot to grid 'end', 'end' has to be an adjacent grid
 		
 		int next_x, next_y;
-		Grid current = arena.getGrid(this.xLocation, this.yLocation);
+		
+		next_x = next.getX();
+		next_y = next.getY();
+		
+		System.err.println("moving from ("+this.xLocation+","+this.yLocation+") to ("+next_x+","+next_y+")");
 		
 		// check validity of grid 'next', return if premise is false
 		if (!((this.xLocation == next_x+1 && this.yLocation == next_y) ||
@@ -1385,13 +1438,14 @@ public class Robot {
 		
 		// align facing of robot to next grid
 		alignFacing(next);
+		System.err.println("heading "+this.direction);
 		
 		// move forward to next grid
 		moveForward(1);
 	}
 	
 	private void alignFacing(Grid to){
-		int finalDirection, turningRequirement;
+		int finalDirection = this.direction, turningRequirement;
 		
 		// determine robot's final facing, stops if invalid
 		switch(this.xLocation - to.getX()){
@@ -1399,17 +1453,16 @@ public class Robot {
 				break;
 			case -1: finalDirection = HEADING_RIGHT;
 				break;
-			case 0: switch(this.yLocation - to.getY()){
-					case 1: finalDirection = HEADING_DOWN;
-						break;
-					case -1: finalDirection = HEADING_UP;
-						break;
-				}
-			default: return;
+		}
+		switch(this.yLocation - to.getY()){
+			case 1: finalDirection = HEADING_DOWN;
+				break;
+			case -1: finalDirection = HEADING_UP;
+				break;
 		}
 		
 		// rotate robot
-		turningRequirement = ((finalDirection - this.direction)/90)%4;
+		turningRequirement = ((finalDirection - this.direction)/90+4)%4;
 		// 0: no rotation, 1: turn right, 2: turn right twice, 3: turn left
 		switch(turningRequirement){
 			case 0: break;
@@ -1476,6 +1529,14 @@ public class Robot {
 		List<Grid> travelRoute = aStarSearch(currentGrid, startGrid, traversableGridList);
 		moveRobot(travelRoute);
 		// add necessary calibration command here if any
-		alginFacing(facingGrid);
+		alignFacing(facingGrid);
+	}
+
+	private void print(List<Grid> list){
+		System.err.print("list: ");
+		for (Grid g : list){
+			System.err.print("("+g.getX()+","+g.getY()+")"+g.getPathCost()+" | ");
+		}
+		System.err.println();
 	}
 }
