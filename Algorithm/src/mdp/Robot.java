@@ -1426,6 +1426,34 @@ public class Robot {
 	
 	private void clearUnexplored(){
 		// find unexplored grids in vicinity and move robot to there
+		int[][] offset = {{0,1}, {0,1},{0,-1},{-1,0}};
+		int forward = this.direction/90;
+		int left = (forward - 1) % 4;
+		int right = (forward + 1) % 4;
+		boolean move = false;
+		
+		// setting search to limited 3 grid range
+		for (int i = 1; i < 3; i++){
+			if(scanForUnexplored(this.xLocation + i * offset[forward][0], this.yLocation + i * offset[forward][1])){
+				// don't turn
+				move = true;
+			}
+			else if (scanForUnexplored(this.xLocation + i * offset[left][0], this.yLocation + i * offset[left][1])){
+				turnLeft();
+				move = true;
+			}
+			else if (scanForUnexplored(this.xLocation + i* offset[right][0], this.yLocation + i * offset[right][1])){
+				turnRight();
+				move = true;
+			}
+			if (move) moveForward(1);
+		}
+		
+		if (move) clearUnexplored();
+	}
+	
+	private boolean scanForUnexplored(int x, int y){
+		// scan three grids in the stated direction from othe robot
 		
 	}
 	
