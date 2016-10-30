@@ -1424,7 +1424,7 @@ public class Robot {
 		}
 	}
 	
-	private void clearUnexplored(){
+	/*private void clearUnexplored(){
 		// find unexplored grids in vicinity and move robot to there
 		int[][] offset = {{0,1}, {0,1},{0,-1},{-1,0}};
 		int forward = this.direction/90;
@@ -1432,16 +1432,19 @@ public class Robot {
 		int right = (forward + 1) % 4;
 		boolean move = false;
 		
-		// setting search to limited 3 grid range
-		for (int i = 1; i < 3; i++){
+		// setting search to limited 2 grid range, i starts from 2 because of robot size
+		for (int i = 2; i < 4; i++){
+			// scan front
 			if(scanForUnexplored(this.xLocation + i * offset[forward][0], this.yLocation + i * offset[forward][1])){
 				// don't turn
 				move = true;
 			}
+			// scan left
 			else if (scanForUnexplored(this.xLocation + i * offset[left][0], this.yLocation + i * offset[left][1])){
 				turnLeft();
 				move = true;
 			}
+			// scan right
 			else if (scanForUnexplored(this.xLocation + i* offset[right][0], this.yLocation + i * offset[right][1])){
 				turnRight();
 				move = true;
@@ -1454,8 +1457,16 @@ public class Robot {
 	
 	private boolean scanForUnexplored(int x, int y){
 		// scan three grids in the stated direction from othe robot
+		// return true if found unexplored and can move to that grid
 		
-	}
+		// horizontal scan
+		if (x == this.xLocation && y != this.yLocation){
+			
+		}
+		else if (x != this.xLocation && y == this.yLocation){
+			
+		}
+	}*/
 	
 	private void returnToStart(List<Grid> traversableGridList){
 		Grid currentGrid = this.arena.getGrid(this.xLocation, this.yLocation);
